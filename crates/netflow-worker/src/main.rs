@@ -8,10 +8,12 @@
 //! ```sql
 //! ATTACH 'netflow' (TYPE vgi, LOCATION './target/release/netflow-worker');
 //! LOAD inet;
-//! SELECT f.src_addr, f.dst_addr, f.bytes
-//! FROM read_blob('caps/*.dat') AS d,
-//!      LATERAL netflow.main.flows(d.content, exporter := 'r1') AS f
-//! WHERE f.diagnostics IS NULL;
+//! -- The decoders are table-in-out: pass a relation with a `datagram` BLOB
+//! -- column (and optional per-row `exporter`), not a correlated LATERAL column.
+//! SELECT src_addr::INET, dst_addr::INET, bytes
+//! FROM netflow.main.flows((FROM (SELECT content AS datagram, filename AS exporter
+//!                                 FROM read_blob('caps/*.dat'))))
+//! WHERE diagnostics IS NULL;
 //! ```
 //!
 //! All wire decoding + the serde template cache live in `netflow-core`; the
@@ -171,8 +173,9 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                     "vgi.example_queries".to_string(),
                     "SELECT netflow.main.netflow_version();\n\
                      SELECT netflow.main.flow_version(content) FROM read_blob('caps/*.dat');\n\
-                     SELECT * FROM read_blob('caps/*.dat') AS d, LATERAL \
-                     netflow.main.flows(d.content, exporter := 'r1') AS f WHERE f.diagnostics IS NULL;\n\
+                     SELECT src_addr::INET, dst_addr::INET, bytes \
+                     FROM netflow.main.flows((FROM (SELECT content AS datagram, filename AS exporter \
+                     FROM read_blob('caps/*.dat')))) WHERE diagnostics IS NULL;\n\
                      SELECT * FROM netflow.main.templates();"
                         .to_string(),
                 ),

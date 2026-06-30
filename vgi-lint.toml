@@ -4,21 +4,27 @@
 # (domain / category / topic), titles, doc_llm / doc_md, keywords, per-argument
 # docs, example_queries, result-column docs, and the executable_examples payload
 # are all emitted from the worker's catalog + FunctionMetadata
-# (crates/netflow-worker/src/**), which the linter reads over VGI. All STATIC
-# metadata rules gate at `info`.
+# (crates/netflow-worker/src/**), which the linter reads over VGI.
 #
-# The example-EXECUTION rules (VGI901/902/906/907) are disabled: the headline
-# decode examples read committed datagram fixtures via `read_blob('test/data/…')`
-# and use the core `INET` type (`src_addr::INET <<= …`), which needs `LOAD inet;`
-# and the fixture files present. The lint sandbox attaches only the worker, so
-# those rows would not materialize there — but the SAME queries are covered by
-# the haybarn SQLLogic E2E (test/sql/*.test), which loads `vgi` + `inet` and runs
-# them for real across the subprocess + unix + HTTP transports. Every static
-# metadata rule still gates at --fail-on info.
+# Execution is ON in `run` mode: every function ships a self-contained,
+# INET-free `vgi.executable_examples` (and a native Meta.example) that decodes an
+# inline hex sample datagram — built from netflow-core's golden fixtures — so the
+# linter RUNS each one against the attached worker with no external files or
+# `LOAD inet`. `templates()` uses a two-statement example (decode → introspect)
+# so it returns rows on a cold worker. The real-world `read_blob(...)` + `::INET`
+# archive pattern (which needs the inet extension + capture files, neither
+# present in the lint sandbox) lives in the worker's prose docs and is exercised
+# for real by the haybarn SQLLogic E2E (test/sql/*.test) across the subprocess +
+# unix + HTTP transports.
+#
+# Every rule — static metadata AND example execution — gates at --fail-on info.
 [tool.vgi-lint-check]
 select = ["ALL"]
-ignore = ["VGI901", "VGI902", "VGI906", "VGI907"]
 fail_on = "info"
+
+[tool.vgi-lint-check.execution]
+enabled = true
+mode = "run"
 
 [tool.vgi-lint-check.options]
 column_comment_min_ratio = 0.8

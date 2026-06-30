@@ -56,15 +56,30 @@ impl ScalarFunction for Header {
         );
         tags.push((
             "vgi.executable_examples".into(),
-            r#"[{"description":"Header of a non-flow blob is NULL.","sql":"SELECT netflow.main.header('\\x00'::BLOB) AS h"}]"#
-                .into(),
+            crate::meta::executable_examples_json(&[
+                (
+                    "Decode the export header of a real NetFlow v5 datagram (version 5, 2 records).",
+                    &format!(
+                        "SELECT netflow.main.header(from_hex('{hex}')::BLOB) AS hdr",
+                        hex = crate::meta::SAMPLE_V5_HEX
+                    ),
+                ),
+                (
+                    "The header of a non-flow blob is NULL.",
+                    "SELECT netflow.main.header('\\x00'::BLOB) AS hdr",
+                ),
+            ]),
         ));
         FunctionMetadata {
             description: "Decode a flow datagram's export header".into(),
             return_type: Some(DataType::Struct(struct_fields())),
             examples: vec![FunctionExample {
-                sql: "SELECT netflow.main.header(content).sequence FROM read_blob('s3://flow/*.dat');".into(),
-                description: "Read each datagram's export sequence number.".into(),
+                sql: format!(
+                    "SELECT netflow.main.header(from_hex('{hex}')::BLOB).sequence AS sequence",
+                    hex = crate::meta::SAMPLE_V5_HEX
+                ),
+                description: "Read a datagram's export sequence number (for gap / dedup analysis)."
+                    .into(),
                 expected_output: None,
             }],
             tags,

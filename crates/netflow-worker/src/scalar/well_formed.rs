@@ -46,17 +46,31 @@ impl ScalarFunction for WellFormed {
         );
         tags.push((
             "vgi.executable_examples".into(),
-            r#"[{"description":"Garbage bytes are not a flow datagram.","sql":"SELECT netflow.main.well_formed('\\xde\\xad'::BLOB).kind AS kind"}]"#
-                .into(),
+            crate::meta::executable_examples_json(&[
+                (
+                    "A real NetFlow v5 datagram validates clean (ok = true, version = '5').",
+                    &format!(
+                        "SELECT netflow.main.well_formed(from_hex('{hex}')::BLOB) AS check",
+                        hex = crate::meta::SAMPLE_V5_HEX
+                    ),
+                ),
+                (
+                    "Garbage bytes are flagged not-a-flow-datagram (ok = false).",
+                    "SELECT netflow.main.well_formed('\\xde\\xad'::BLOB).kind AS kind",
+                ),
+            ]),
         ));
         FunctionMetadata {
             description: "Validate a flow datagram's structure (never panics)".into(),
             return_type: Some(DataType::Struct(struct_fields())),
             examples: vec![FunctionExample {
-                sql:
-                    "SELECT netflow.main.well_formed(content).* FROM read_blob('s3://flow/*.dat');"
-                        .into(),
-                description: "Triage which captured datagrams are well-formed.".into(),
+                sql: format!(
+                    "SELECT netflow.main.well_formed(from_hex('{hex}')::BLOB) AS validation",
+                    hex = crate::meta::SAMPLE_V5_HEX
+                ),
+                description: "Triage a captured datagram — STRUCT(ok, version, error, kind) — \
+                              before decoding."
+                    .into(),
                 expected_output: None,
             }],
             tags,

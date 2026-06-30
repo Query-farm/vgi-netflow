@@ -131,6 +131,27 @@ impl TableFunction for Templates {
              | `use_count` | UBIGINT | Decode count. |"
                 .into(),
         ));
+        // Runnable example: learn a template by decoding an IPFIX datagram, then
+        // introspect it. Two statements on one connection so the global cache
+        // projection the decode writes is visible to templates() in the same
+        // session (an empty cache on a cold worker would otherwise show 0 rows).
+        tags.push((
+            "vgi.executable_examples".into(),
+            crate::meta::executable_examples_json(&[(
+                "Learn an IPFIX template by decoding a datagram, then list it (template id, kind, \
+                 field count).",
+                &format!(
+                    "SELECT count(*) FROM netflow.main.ipfix_decode((SELECT from_hex('{hex}') \
+                     AS datagram, 'doc-exporter' AS exporter));\n\
+                     SELECT exporter, template_id, kind, field_count \
+                     FROM netflow.main.templates(exporter => 'doc-exporter');",
+                    hex = crate::meta::SAMPLE_IPFIX_HEX
+                ),
+            )]),
+        ));
+        // No native Meta.examples here: a bare `templates()` on a cold worker
+        // returns no rows (VGI902), so the runnable demonstration lives in the
+        // two-statement vgi.executable_examples above (decode → introspect).
         FunctionMetadata {
             description: "Project the live v9/IPFIX template cache".into(),
             tags,

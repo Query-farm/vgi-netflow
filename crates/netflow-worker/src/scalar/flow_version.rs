@@ -34,16 +34,30 @@ impl ScalarFunction for FlowVersion {
         );
         tags.push((
             "vgi.executable_examples".into(),
-            r#"[{"description":"Probe the version of a one-byte non-flow blob (returns NULL).","sql":"SELECT netflow.main.flow_version('\\x00'::BLOB) AS v"}]"#
-                .into(),
+            crate::meta::executable_examples_json(&[
+                (
+                    "Probe a real NetFlow v5 datagram — returns '5'.",
+                    &format!(
+                        "SELECT netflow.main.flow_version(from_hex('{hex}')::BLOB) AS version",
+                        hex = crate::meta::SAMPLE_V5_HEX
+                    ),
+                ),
+                (
+                    "A one-byte non-flow blob matches no known header — returns NULL.",
+                    "SELECT netflow.main.flow_version('\\x00'::BLOB) AS version",
+                ),
+            ]),
         ));
         FunctionMetadata {
             description: "Probe a flow-export datagram's wire version".into(),
             return_type: Some(DataType::Utf8),
             examples: vec![FunctionExample {
-                sql: "SELECT netflow.main.flow_version(content) FROM read_blob('s3://flow/*.dat');"
-                    .into(),
-                description: "Detect each datagram's flow version.".into(),
+                sql: format!(
+                    "SELECT netflow.main.flow_version(from_hex('{hex}')::BLOB) AS flow_version",
+                    hex = crate::meta::SAMPLE_V5_HEX
+                ),
+                description:
+                    "Detect a datagram's flow-export version before routing it to a decoder.".into(),
                 expected_output: None,
             }],
             tags,

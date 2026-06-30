@@ -13,7 +13,7 @@
 use arrow_array::RecordBatch;
 use netflow_core::{decode_datagram, flush_pending, DecodeOptions, Mode, Restrict};
 use vgi::table_in_out::TableInOutFunction;
-use vgi::{ArgSpec, BindParams, BindResponse, FunctionMetadata, ProcessParams};
+use vgi::{ArgSpec, BindParams, BindResponse, FunctionExample, FunctionMetadata, ProcessParams};
 use vgi_rpc::{Result, RpcError};
 
 use crate::arrow_map::{flow_schema, rows_to_batch};
@@ -67,6 +67,7 @@ impl TableInOutFunction for FlowDecode {
     fn metadata(&self) -> FunctionMetadata {
         FunctionMetadata {
             description: describe(self.name).to_string(),
+            examples: vec![doc_example(self.name)],
             tags: tags_for(self.name),
             ..Default::default()
         }
@@ -233,5 +234,115 @@ fn tags_for(name: &str) -> Vec<(String, String)> {
          | `diagnostics` | VARCHAR | NULL on clean decode. |"
             .into(),
     ));
+    let (ex_desc, ex_sql) = executable_example(name);
+    tags.push((
+        "vgi.executable_examples".into(),
+        crate::meta::executable_examples_json(&[(ex_desc, ex_sql.as_str())]),
+    ));
     tags
+}
+
+/// A self-contained runnable example per function — decode an inline hex sample
+/// datagram (no external files, no `LOAD inet`) so `vgi-lint --execute` can run
+/// it directly against the attached worker.
+fn executable_example(name: &str) -> (&'static str, String) {
+    use crate::meta::{SAMPLE_IPFIX_HEX, SAMPLE_SFLOW_HEX, SAMPLE_V5_HEX, SAMPLE_V9_HEX};
+    match name {
+        "flows" => (
+            "Auto-detect and decode a captured NetFlow v5 datagram (two records) to \
+             normalized flow rows.",
+            format!(
+                "SELECT flow_version, dst_port, protocol, bytes, packets \
+                 FROM netflow.main.flows((SELECT from_hex('{SAMPLE_V5_HEX}') AS datagram)) \
+                 ORDER BY dst_port"
+            ),
+        ),
+        "netflow_decode" => (
+            "Decode a NetFlow v9 datagram that carries its template and one data record.",
+            format!(
+                "SELECT flow_version, dst_port, protocol, packets \
+                 FROM netflow.main.netflow_decode((SELECT from_hex('{SAMPLE_V9_HEX}') AS datagram))"
+            ),
+        ),
+        "ipfix_decode" => (
+            "Decode an IPFIX (v10) datagram: a Template Set plus one fully-decodable IPv4/TCP \
+             flow.",
+            format!(
+                "SELECT flow_version, dst_port, protocol, bytes, packets \
+                 FROM netflow.main.ipfix_decode((SELECT from_hex('{SAMPLE_IPFIX_HEX}') AS datagram))"
+            ),
+        ),
+        "sflow_decode" => (
+            "Decode an sFlow v5 datagram (one flow sample + one counter sample).",
+            format!(
+                "SELECT flow_version, dst_port, protocol \
+                 FROM netflow.main.sflow_decode((SELECT from_hex('{SAMPLE_SFLOW_HEX}') AS datagram)) \
+                 WHERE dst_port IS NOT NULL"
+            ),
+        ),
+        _ => (
+            "Decode a captured NetFlow v5 datagram to normalized flow rows.",
+            format!(
+                "SELECT flow_version, dst_port \
+                 FROM netflow.main.flows((SELECT from_hex('{SAMPLE_V5_HEX}') AS datagram))"
+            ),
+        ),
+    }
+}
+
+/// A second, self-contained runnable example per function — it decodes an
+/// inline hex sample datagram and demonstrates the per-row `exporter` column
+/// (cache-scope id). Self-contained and INET-free so it runs as written in the
+/// `vgi-lint --execute` sandbox; for the real-world `read_blob(...)` /
+/// `::INET`-join pattern over a capture archive see the worker's `doc_md`.
+fn doc_example(name: &str) -> FunctionExample {
+    use crate::meta::{SAMPLE_IPFIX_HEX, SAMPLE_SFLOW_HEX, SAMPLE_V5_HEX, SAMPLE_V9_HEX};
+    let (sql, description): (String, &str) = match name {
+        "flows" => (
+            format!(
+                "SELECT exporter, count(*) AS flows, sum(bytes) AS total_bytes \
+                 FROM netflow.main.flows((SELECT from_hex('{SAMPLE_V5_HEX}') AS datagram, \
+                 'router-1' AS exporter)) GROUP BY exporter"
+            ),
+            "Decode a datagram with a per-row exporter id (cache scope) and aggregate the decoded \
+             flows by exporter.",
+        ),
+        "netflow_decode" => (
+            format!(
+                "SELECT exporter, flow_version, src_port, dst_port, packets \
+                 FROM netflow.main.netflow_decode((SELECT from_hex('{SAMPLE_V9_HEX}') AS datagram, \
+                 'router-1' AS exporter))"
+            ),
+            "Decode a NetFlow v9 datagram, scoping the template cache to exporter 'router-1' so \
+             template ids never collide across devices.",
+        ),
+        "ipfix_decode" => (
+            format!(
+                "SELECT flow_version, src_port, dst_port, bytes, packets \
+                 FROM netflow.main.ipfix_decode((SELECT from_hex('{SAMPLE_IPFIX_HEX}') AS datagram))"
+            ),
+            "Decode an IPFIX datagram and read the mapped 5-tuple plus byte/packet counters.",
+        ),
+        "sflow_decode" => (
+            format!(
+                "SELECT flow_version, src_port, dst_port, protocol \
+                 FROM netflow.main.sflow_decode((SELECT from_hex('{SAMPLE_SFLOW_HEX}') AS datagram)) \
+                 WHERE dst_port IS NOT NULL"
+            ),
+            "Decode an sFlow v5 datagram; flow-sample rows carry the sampled 5-tuple (counter \
+             samples have NULL ports).",
+        ),
+        _ => (
+            format!(
+                "SELECT flow_version, dst_port \
+                 FROM netflow.main.flows((SELECT from_hex('{SAMPLE_V5_HEX}') AS datagram))"
+            ),
+            "Decode captured flow-export datagrams to normalized flow rows.",
+        ),
+    };
+    FunctionExample {
+        sql,
+        description: description.to_string(),
+        expected_output: None,
+    }
 }

@@ -72,8 +72,8 @@ cargo fmt --all -- --check
 cargo test --workspace
 RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
 ./run_tests.sh                          # haybarn E2E (subprocess); ci/run-integration.sh for unix/http
-uvx --from vgi-lint-check vgi-lint lint target/release/netflow-worker \
-    --catalog netflow --config vgi-lint.toml --no-execute --fail-on info
+uvx --from vgi-lint-check@0.37.0 vgi-lint lint target/release/netflow-worker \
+    --catalog netflow --config vgi-lint.toml --fail-on info   # executes examples (run mode)
 ```
 
 Every function carries `vgi.title` / `vgi.doc_llm` / `vgi.doc_md` / `vgi.keywords`
