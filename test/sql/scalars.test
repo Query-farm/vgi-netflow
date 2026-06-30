@@ -1,0 +1,66 @@
+# name: test/sql/scalars.test
+# description: Scalar probes — netflow_version, flow_version, header, well_formed.
+# group: [vgi_netflow]
+
+require-env VGI_NETFLOW_WORKER
+
+statement ok
+LOAD vgi;
+
+statement ok
+LOAD inet;
+
+statement ok
+ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION '${VGI_NETFLOW_WORKER}');
+
+# Worker version is a non-null semver string.
+query I
+SELECT netflow.main.netflow_version() IS NOT NULL;
+----
+true
+
+# flow_version probes the leading bytes of each captured datagram.
+query T
+SELECT netflow.main.flow_version(content) FROM read_blob('test/data/v5.dat');
+----
+5
+
+query T
+SELECT netflow.main.flow_version(content) FROM read_blob('test/data/v9.dat');
+----
+9
+
+query T
+SELECT netflow.main.flow_version(content) FROM read_blob('test/data/ipfix.dat');
+----
+10
+
+query T
+SELECT netflow.main.flow_version(content) FROM read_blob('test/data/sflow.dat');
+----
+sflow5
+
+# A non-flow blob probes to NULL.
+query T
+SELECT netflow.main.flow_version('\x00\x01'::BLOB);
+----
+NULL
+
+# header() decodes just the export header.
+query II
+SELECT netflow.main.header(content).version, netflow.main.header(content).sequence
+FROM read_blob('test/data/v9.dat');
+----
+9	20
+
+# well_formed() classifies structure and never errors on garbage.
+query TT
+SELECT netflow.main.well_formed(content).ok, netflow.main.well_formed(content).version
+FROM read_blob('test/data/ipfix.dat');
+----
+true	10
+
+query T
+SELECT netflow.main.well_formed('\xde\xad'::BLOB).kind;
+----
+not-a-flow-datagram

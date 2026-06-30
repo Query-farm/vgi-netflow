@@ -1,0 +1,21 @@
+[package]
+name = "netflow-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Pure NetFlow v5 / v9 / IPFIX / sFlow v5 flow-export datagram decoders + template cache (no Arrow / VGI deps)"
+
+[lib]
+name = "netflow_core"
+path = "src/lib.rs"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+
+[dev-dependencies]
+proptest = "1"

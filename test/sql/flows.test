@@ -1,0 +1,81 @@
+# name: test/sql/flows.test
+# description: Unified flows() decode across v5/v9/IPFIX/sFlow + INET joins.
+# group: [vgi_netflow]
+
+require-env VGI_NETFLOW_WORKER
+
+statement ok
+LOAD vgi;
+
+statement ok
+LOAD inet;
+
+statement ok
+ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION '${VGI_NETFLOW_WORKER}');
+
+# --- NetFlow v5: two records, addresses emitted as native INET. ---
+# In-out functions take a relation (DuckDB rejects correlated table-fn columns):
+# pass a `datagram` BLOB column and a per-row `exporter` column.
+query ITI
+SELECT f.src_addr::INET, f.dst_port, f.bytes
+FROM netflow.main.flows((FROM (SELECT content AS datagram, 'e2e_v5' AS exporter
+                                FROM read_blob('test/data/v5.dat')))) AS f
+ORDER BY f.dst_port;
+----
+192.168.1.1	53	200
+10.0.0.1	80	1000
+
+# INET containment (DuckDB inet uses <<= / >>=, not &&).
+query I
+SELECT count(*)
+FROM netflow.main.flows((FROM (SELECT content AS datagram, 'e2e_v5b' AS exporter
+                                FROM read_blob('test/data/v5.dat')))) AS f
+WHERE f.src_addr::INET <<= '10.0.0.0/8'::INET;
+----
+1
+
+# --- NetFlow v9 (template + data in one datagram): one decoded flow. ---
+query ITII
+SELECT f.flow_version, f.src_addr::INET, f.dst_port, f.packets
+FROM netflow.main.flows((FROM (SELECT content AS datagram, 'e2e_v9' AS exporter
+                                FROM read_blob('test/data/v9.dat')))) AS f
+WHERE f.diagnostics IS NULL;
+----
+9	172.16.0.1	22	3
+
+# --- IPFIX: absolute millisecond timestamps + counters. ---
+query TIII
+SELECT f.src_addr::INET, f.dst_port, f.bytes, f.packets
+FROM netflow.main.flows((FROM (SELECT content AS datagram, 'e2e_ipfix' AS exporter
+                                FROM read_blob('test/data/ipfix.dat')))) AS f
+WHERE f.diagnostics IS NULL;
+----
+203.0.113.5	443	1500000	1200
+
+# IPFIX variable-length IE (interfaceName) lands in raw_fields.
+query T
+SELECT f.raw_fields['interfaceName']::VARCHAR
+FROM netflow.main.flows((FROM (SELECT content AS datagram, 'e2e_var' AS exporter
+                                FROM read_blob('test/data/ipfix_var.dat')))) AS f
+WHERE f.src_addr IS NOT NULL;
+----
+eth0
+
+# --- sFlow: 5-tuple with sampling-scaled byte count (64 * 4096). ---
+query TIII
+SELECT f.src_addr::INET, f.dst_port, f.sampling_rate, f.bytes
+FROM netflow.main.flows((FROM (SELECT content AS datagram, 'e2e_sflow' AS exporter
+                                FROM read_blob('test/data/sflow.dat')))) AS f
+WHERE f.src_addr IS NOT NULL;
+----
+192.0.2.10	80	4096	262144
+
+# flows-only mode drops the sFlow counter sample.
+query I
+SELECT count(*)
+FROM netflow.main.flows((FROM (SELECT content AS datagram, 'e2e_sf2' AS exporter,
+                                       'flows-only' AS mode
+                                FROM read_blob('test/data/sflow.dat')))) AS f
+WHERE f.diagnostics = 'counter-sample';
+----
+0

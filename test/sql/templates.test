@@ -1,0 +1,63 @@
+# name: test/sql/templates.test
+# description: Per-version decoders + template-cache introspection.
+# group: [vgi_netflow]
+
+require-env VGI_NETFLOW_WORKER
+
+statement ok
+LOAD vgi;
+
+statement ok
+LOAD inet;
+
+statement ok
+ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION '${VGI_NETFLOW_WORKER}');
+
+# netflow_decode accepts v5/v9; an IPFIX datagram surfaces a decode-error.
+query I
+SELECT count(*)
+FROM netflow.main.netflow_decode((FROM (SELECT content AS datagram, 'tmpl_a' AS exporter
+                                         FROM read_blob('test/data/ipfix.dat')))) AS f
+WHERE f.diagnostics LIKE 'decode-error:%';
+----
+1
+
+# ipfix_decode is the headline IPFIX path.
+query T
+SELECT f.src_addr::INET
+FROM netflow.main.ipfix_decode((FROM (SELECT content AS datagram, 'tmpl_b' AS exporter
+                                       FROM read_blob('test/data/ipfix.dat')))) AS f
+WHERE f.diagnostics IS NULL;
+----
+203.0.113.5
+
+# sflow_decode is stateless.
+query I
+SELECT f.sampling_rate
+FROM netflow.main.sflow_decode((FROM (SELECT content AS datagram, 'tmpl_c' AS exporter
+                                       FROM read_blob('test/data/sflow.dat')))) AS f
+WHERE f.src_addr IS NOT NULL;
+----
+4096
+
+# Prime the template cache via ipfix_decode, then introspect it.
+statement ok
+SELECT count(*)
+FROM netflow.main.ipfix_decode((FROM (SELECT content AS datagram, 'tmpl_intro' AS exporter
+                                       FROM read_blob('test/data/ipfix.dat')))) AS f;
+
+# templates() projects the learned layout (template 256, 9 fields, kind data).
+query IIT
+SELECT template_id, field_count, kind
+FROM netflow.main.templates(exporter => 'tmpl_intro')
+ORDER BY template_id;
+----
+256	9	data
+
+# The first field of template 256 is sourceIPv4Address (IE 8).
+query IT
+SELECT fields[1].ie_id, fields[1].name
+FROM netflow.main.templates(exporter => 'tmpl_intro')
+WHERE template_id = 256;
+----
+8	sourceIPv4Address
