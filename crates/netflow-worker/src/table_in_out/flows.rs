@@ -78,12 +78,12 @@ impl TableInOutFunction for FlowDecode {
             "relation",
             0,
             "table",
-            "A relation carrying a `datagram` BLOB column (captured exporter datagrams or UDP \
-             payloads carved out of pcap), and optionally an `exporter` VARCHAR column (cache \
-             scope / source device id, read per row so template ids never collide across \
-             exporters), an `obs_domain` integer column (override the header observation domain), \
-             and a `mode` VARCHAR column ('auto' / 'flows-only' / 'all'). Feed datagrams in \
-             capture order so a Template Set is seen before the Data Sets that reference it.",
+            "A relation carrying a `datagram` column of raw captured bytes (exporter datagrams or \
+             UDP payloads carved out of pcap), and optionally an `exporter` column (cache scope / \
+             source device id, read per row so template ids never collide across exporters), an \
+             `obs_domain` column (override the header observation domain), and a `mode` column \
+             ('auto' / 'flows-only' / 'all'). Feed datagrams in capture order so a Template Set is \
+             seen before the Data Sets that reference it.",
         )]
     }
 
@@ -176,10 +176,9 @@ fn tags_for(name: &str) -> Vec<(String, String)> {
              AS numbers, interfaces, next hop, ToS, sampling, plus a raw_fields MAP of every \
              unmapped Information Element. Threads a per-exporter, per-observation-domain template \
              cache across rows and scan batches so v9/IPFIX data decodes against templates seen in \
-             earlier datagrams. Pass a relation with a `datagram` BLOB column (and optionally an \
-             `exporter` column so template ids do not collide across devices): \
-             FROM netflow.main.flows((FROM (SELECT content AS datagram, filename AS exporter FROM \
-             read_blob('caps/*.dat')))). Feed datagrams in capture order.",
+             earlier datagrams. Pass a relation carrying a `datagram` column of captured bytes \
+             (and optionally an `exporter` column so template ids do not collide across devices); \
+             the runnable example shows the exact call shape. Feed datagrams in capture order.",
             "Decode any flow-export datagram to normalized flow rows (the wide schema). Pass a \
              relation with a `datagram` BLOB column (and optional `exporter` / `obs_domain` / \
              `mode`). Auto-detects v5/v9/IPFIX/sFlow and threads the template cache.",
@@ -219,6 +218,7 @@ fn tags_for(name: &str) -> Vec<(String, String)> {
         _ => ("Flow Decode", "Decode flow datagrams.", "Decode flow datagrams.", "flow, decode"),
     };
     let mut tags = crate::meta::object_tags(title, llm, md, kw);
+    tags.push(("vgi.category".into(), "decode".into()));
     tags.push((
         "vgi.result_columns_md".into(),
         "| column | type | description |\n\

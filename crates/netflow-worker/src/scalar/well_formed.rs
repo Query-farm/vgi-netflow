@@ -44,6 +44,7 @@ impl ScalarFunction for WellFormed {
              panics on garbage.",
             "well formed, validate, validation, malformed, truncated, triage, netflow, ipfix, sflow",
         );
+        tags.push(("vgi.category".into(), "probe".into()));
         tags.push((
             "vgi.executable_examples".into(),
             crate::meta::executable_examples_json(&[
@@ -83,7 +84,7 @@ impl ScalarFunction for WellFormed {
             "datagram",
             0,
             "binary",
-            "A captured flow-export datagram (BLOB).",
+            "The raw captured bytes to structurally validate as a flow-export datagram.",
         )]
     }
 

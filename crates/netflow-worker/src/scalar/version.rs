@@ -30,6 +30,7 @@ impl ScalarFunction for NetflowVersion {
              Argument-free and deterministic; a single semver VARCHAR.",
             "version, build version, netflow_version, diagnostics, worker version, semver",
         );
+        tags.push(("vgi.category".into(), "probe".into()));
         tags.push((
             "vgi.executable_examples".into(),
             r#"[{"description":"Return the worker version string.","sql":"SELECT netflow.main.netflow_version() AS version"}]"#

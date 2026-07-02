@@ -54,6 +54,7 @@ impl ScalarFunction for Header {
              export_time, sequence, obs_domain). NULL if not a flow datagram.",
             "header, export header, sequence, gap detection, dedup, version, obs_domain, netflow, ipfix, sflow",
         );
+        tags.push(("vgi.category".into(), "probe".into()));
         tags.push((
             "vgi.executable_examples".into(),
             crate::meta::executable_examples_json(&[
@@ -92,7 +93,7 @@ impl ScalarFunction for Header {
             "datagram",
             0,
             "binary",
-            "A captured flow-export datagram (BLOB).",
+            "The raw captured bytes of one flow-export datagram whose export header you want read.",
         )]
     }
 

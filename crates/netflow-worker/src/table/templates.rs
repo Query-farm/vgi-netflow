@@ -117,6 +117,7 @@ impl TableFunction for Templates {
              filter.",
             "templates, template cache, introspection, ipfix, netflow, v9, fields, debug, layout",
         );
+        tags.push(("vgi.category".into(), "introspection".into()));
         tags.push((
             "vgi.result_columns_md".into(),
             "| column | type | description |\n\

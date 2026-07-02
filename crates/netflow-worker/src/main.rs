@@ -64,9 +64,9 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                  per-observation-domain template cache as externalized VGI scan state that survives \
                  batch boundaries and HTTP rehydration. Use it for SQL forensics over captured flow \
                  archives — join flows to geoip/ASN, threat-intel, and asset inventory, at scale, \
-                 with no collector. Functions: flows (auto-detect, unified), netflow_decode, \
-                 ipfix_decode, sflow_decode, templates (cache introspection), and the scalars \
-                 flow_version, header, well_formed, netflow_version."
+                 with no collector. Reach for it whenever you have raw exporter datagrams (or UDP \
+                 payloads carved out of pcap) in a BLOB column and want queryable, normalized flow \
+                 rows without standing up a collector stack."
                     .to_string(),
             ),
             (
@@ -83,11 +83,7 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                  scan-batch boundaries and HTTP worker rehydration (a template seen in datagram 1 \
                  decodes data in datagram 10,000). A data record that arrives before its template \
                  is buffered and retried, or emitted with `diagnostics = 'missing-template:…'` — \
-                 never dropped.\n\n**Table functions:** `flows` (auto-detect any version, unified \
-                 entry point), `netflow_decode` (v5/v9), `ipfix_decode` (the headline IPFIX \
-                 decoder), `sflow_decode` (stateless), and `templates` (introspect the learned \
-                 template cache).\n\n**Scalars:** `flow_version`, `header`, `well_formed`, \
-                 `netflow_version`.\n\nAddresses are emitted as DuckDB **INET** (`LOAD inet;`), so \
+                 never dropped.\n\nAddresses are emitted as DuckDB **INET** (`LOAD inet;`), so \
                  `src_addr::INET <<= '10.0.0.0/8'::INET` containment joins to geoip / threat-intel \
                  work directly. The worker decodes captured bytes only — it opens no UDP socket and \
                  makes no egress (collector mode is roadmap)."
@@ -153,20 +149,32 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                 ("topic".to_string(), "netflow-ipfix-sflow".to_string()),
                 (
                     "vgi.doc_llm".to_string(),
-                    "Flow-export decode functions: flows (unified auto-detect), netflow_decode \
-                     (v5/v9), ipfix_decode (IPFIX), sflow_decode (sFlow v5), templates (template \
-                     cache introspection), and the scalars flow_version, header, well_formed, \
-                     netflow_version. Decoders thread a per-exporter, per-observation-domain \
-                     template cache as externalized scan state."
+                    "The single schema for the netflow worker. It groups flow-export decoders \
+                     (turn a captured datagram column into normalized flow rows), template-cache \
+                     introspection, and lightweight probe/validation scalars. The decoders thread \
+                     a per-exporter, per-observation-domain template cache as externalized scan \
+                     state so template-based v9/IPFIX data decodes against templates seen in \
+                     earlier datagrams. List the schema to discover the individual functions and \
+                     their signatures."
                         .to_string(),
                 ),
                 (
                     "vgi.doc_md".to_string(),
                     "The single schema for the `netflow` worker — qualify calls as \
-                     `netflow.main.<fn>(...)`. Table functions: `flows`, `netflow_decode`, \
-                     `ipfix_decode`, `sflow_decode` (BLOB column → normalized flow rows) and \
-                     `templates` (learned-template introspection). Scalars: `flow_version`, \
-                     `header`, `well_formed`, `netflow_version`."
+                     `netflow.main.<fn>(...)`. It provides flow-export **decoders** (a captured \
+                     datagram column → normalized flow rows), **template-cache introspection**, \
+                     and lightweight **probe / validation** scalars. List the schema to see the \
+                     available functions and their signatures."
+                        .to_string(),
+                ),
+                (
+                    "vgi.categories".to_string(),
+                    "[{\"name\":\"decode\",\"description\":\"Table functions that decode captured \
+                     flow-export datagrams (NetFlow v5/v9, IPFIX, sFlow v5) into normalized flow \
+                     rows.\"},{\"name\":\"introspection\",\"description\":\"Inspect the learned \
+                     per-exporter, per-observation-domain template cache that stateful v9/IPFIX \
+                     decode depends on.\"},{\"name\":\"probe\",\"description\":\"Lightweight \
+                     scalars that identify or validate a datagram without a full decode.\"}]"
                         .to_string(),
                 ),
                 (

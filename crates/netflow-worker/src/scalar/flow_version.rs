@@ -32,6 +32,7 @@ impl ScalarFunction for FlowVersion {
              NULL if unrecognized. Header-only, no full decode.",
             "flow version, netflow version, ipfix, sflow, probe, detect, version, datagram, header",
         );
+        tags.push(("vgi.category".into(), "probe".into()));
         tags.push((
             "vgi.executable_examples".into(),
             crate::meta::executable_examples_json(&[
@@ -70,7 +71,7 @@ impl ScalarFunction for FlowVersion {
             "datagram",
             0,
             "binary",
-            "A captured flow-export datagram (BLOB).",
+            "The raw captured bytes of one flow-export datagram — a single exporter UDP payload.",
         )]
     }
 
