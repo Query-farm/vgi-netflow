@@ -8,6 +8,9 @@ statement ok
 LOAD vgi;
 
 statement ok
+INSTALL inet FROM core;
+
+statement ok
 LOAD inet;
 
 statement ok

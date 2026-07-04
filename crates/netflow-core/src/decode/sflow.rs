@@ -71,17 +71,13 @@ pub fn decode(data: &[u8], exporter: &str, mode_flows_only: bool) -> Vec<FlowRec
                 sequence as u64,
                 sample_type & 0x0fff == 3,
             )),
-            2 | 4 => {
-                if !mode_flows_only {
-                    out.push(decode_counter_sample(
-                        body,
-                        &exporter_id,
-                        sub_agent_id,
-                        sequence as u64,
-                        sample_type & 0x0fff == 4,
-                    ));
-                }
-            }
+            2 | 4 if !mode_flows_only => out.push(decode_counter_sample(
+                body,
+                &exporter_id,
+                sub_agent_id,
+                sequence as u64,
+                sample_type & 0x0fff == 4,
+            )),
             _ => {}
         }
     }
