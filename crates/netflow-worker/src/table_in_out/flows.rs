@@ -74,17 +74,25 @@ impl TableInOutFunction for FlowDecode {
     }
 
     fn argument_specs(&self) -> Vec<ArgSpec> {
-        vec![ArgSpec::column(
-            "relation",
-            0,
-            "table",
+        // sFlow carries no templates or observation domain and is self-contained
+        // per datagram, so its input relation description must NOT imply the
+        // template-cache / obs_domain semantics of v9/IPFIX (otherwise the docs
+        // contradict the "stateless" claim — VGI180).
+        let relation_doc = if self.with_obs_domain {
             "A relation carrying a `datagram` column of raw captured bytes (exporter datagrams or \
              UDP payloads carved out of pcap), and optionally an `exporter` column (cache scope / \
              source device id, read per row so template ids never collide across exporters), an \
              `obs_domain` column (override the header observation domain), and a `mode` column \
              ('auto' / 'flows-only' / 'all'). Feed datagrams in capture order so a Template Set is \
-             seen before the Data Sets that reference it.",
-        )]
+             seen before the Data Sets that reference it."
+        } else {
+            "A relation carrying a `datagram` column of raw captured sFlow v5 bytes (exporter \
+             datagrams or UDP payloads carved out of pcap), and optionally an `exporter` column \
+             used purely as a source-device label copied onto each output row. sFlow v5 is \
+             self-contained per datagram — there is no template cache and no observation domain — \
+             so datagrams may be decoded in any order and independently of one another."
+        };
+        vec![ArgSpec::column("relation", 0, "table", relation_doc)]
     }
 
     fn on_bind(&self, params: &BindParams) -> Result<BindResponse> {
@@ -164,6 +172,46 @@ fn describe(name: &str) -> &'static str {
     }
 }
 
+/// The declared `vgi.result_columns_schema` for the normalized flow output —
+/// one `(name, DuckDB type, description)` per column, in the exact order and
+/// with the exact canonical types `DESCRIBE netflow.main.flows(...)` reports
+/// (the INET address columns surface as the physical DuckDB `INET` struct, not
+/// as `INET`, because the logical type does not round-trip through Arrow). Kept
+/// in lockstep with [`crate::arrow_map::flow_schema`].
+const INET_STRUCT: &str = "STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)";
+fn flow_result_columns() -> Vec<(&'static str, &'static str, &'static str)> {
+    vec![
+        ("exporter", "VARCHAR", "Cache key / source device (as supplied via the exporter column or derived)."),
+        ("flow_version", "VARCHAR", "Wire format of the source datagram: '5', '9', '10' (IPFIX), or 'sflow5'."),
+        ("obs_domain", "UINTEGER", "v9 source-id / IPFIX observation domain (the template-id namespace)."),
+        ("template_id", "USMALLINT", "v9/IPFIX template id the record decoded against; NULL for v5 / sFlow."),
+        ("export_time", "TIMESTAMP WITH TIME ZONE", "Datagram export time taken from the export header."),
+        ("sequence", "UBIGINT", "Export sequence number (used for gap / loss detection)."),
+        ("src_addr", INET_STRUCT, "Source IP; cast ::INET for `<<=` containment joins."),
+        ("dst_addr", INET_STRUCT, "Destination IP; cast ::INET for `<<=` containment joins."),
+        ("src_port", "USMALLINT", "Layer-4 source port."),
+        ("dst_port", "USMALLINT", "Layer-4 destination port."),
+        ("protocol", "UTINYINT", "IP protocol number (6 = TCP, 17 = UDP, ...)."),
+        ("tcp_flags", "UTINYINT", "Cumulative TCP control flags observed for the flow."),
+        ("bytes", "UBIGINT", "Octet count (for sFlow, scaled by the sampling rate)."),
+        ("packets", "UBIGINT", "Packet count (for sFlow, the sampling rate)."),
+        ("flow_start", "TIMESTAMP WITH TIME ZONE", "Flow start time, resolved to an absolute timestamp."),
+        ("flow_end", "TIMESTAMP WITH TIME ZONE", "Flow end time, resolved to an absolute timestamp."),
+        ("src_as", "UINTEGER", "Origin autonomous-system number (when the exporter reports it)."),
+        ("dst_as", "UINTEGER", "Peer autonomous-system number (when the exporter reports it)."),
+        ("input_snmp", "UINTEGER", "Ingress interface ifIndex."),
+        ("output_snmp", "UINTEGER", "Egress interface ifIndex."),
+        ("next_hop", INET_STRUCT, "BGP / IP next hop; cast ::INET to use it."),
+        ("tos", "UTINYINT", "IP type-of-service / DSCP byte."),
+        ("src_mask", "UTINYINT", "Source prefix length in bits (v5 / v9)."),
+        ("dst_mask", "UTINYINT", "Destination prefix length in bits (v5 / v9)."),
+        ("sampling_rate", "UINTEGER", "sFlow sampling N / IPFIX samplingInterval; NULL when none."),
+        ("direction", "UTINYINT", "flowDirection (0 = ingress, 1 = egress) when present."),
+        ("raw_fields", "MAP(VARCHAR, BLOB)", "Every Information Element not mapped to a named column, keyed by IE name -> raw bytes."),
+        ("diagnostics", "VARCHAR", "NULL on a clean decode; else missing-template / truncated / decode-error / ..."),
+    ]
+}
+
 /// Per-function discovery metadata (title / doc_llm / doc_md / keywords) + a
 /// result-columns table.
 fn tags_for(name: &str) -> Vec<(String, String)> {
@@ -219,20 +267,14 @@ fn tags_for(name: &str) -> Vec<(String, String)> {
     };
     let mut tags = crate::meta::object_tags(title, llm, md, kw);
     tags.push(("vgi.category".into(), "decode".into()));
+    // Structured result schema (VGI307/VGI321). All four decode functions share
+    // the one normalized `flow_schema()` output, so they share this declaration.
+    // Columns are listed in exactly the order (and with the DuckDB types) the
+    // worker emits — note the INET columns surface as their physical struct and
+    // `raw_fields` as MAP(VARCHAR, BLOB), matching what DESCRIBE reports (VGI910).
     tags.push((
-        "vgi.result_columns_md".into(),
-        "| column | type | description |\n\
-         |---|---|---|\n\
-         | `exporter` | VARCHAR | Source device / cache scope. |\n\
-         | `flow_version` | VARCHAR | '5' / '9' / '10' / 'sflow5'. |\n\
-         | `src_addr` / `dst_addr` | INET | Endpoints (cast ::INET for `<<=`). |\n\
-         | `src_port` / `dst_port` | USMALLINT | L4 ports. |\n\
-         | `protocol` | UTINYINT | IP protocol number. |\n\
-         | `bytes` / `packets` | UBIGINT | Counters. |\n\
-         | `flow_start` / `flow_end` | TIMESTAMPTZ | Resolved flow times. |\n\
-         | `raw_fields` | MAP(VARCHAR, BLOB) | Unmapped IEs. |\n\
-         | `diagnostics` | VARCHAR | NULL on clean decode. |"
-            .into(),
+        "vgi.result_columns_schema".into(),
+        crate::meta::result_columns_schema_json(&flow_result_columns()),
     ));
     let (ex_desc, ex_sql) = executable_example(name);
     tags.push((

@@ -26,7 +26,7 @@ mod state;
 mod table;
 mod table_in_out;
 
-use vgi::catalog::{CatSchema, CatalogModel};
+use vgi::catalog::{CatSchema, CatView, CatalogModel};
 use vgi::Worker;
 
 /// Catalog + schema metadata surfaced to DuckDB and the `vgi-lint` linter.
@@ -91,26 +91,7 @@ fn catalog_metadata(name: &str) -> CatalogModel {
             ),
             (
                 "vgi.agent_test_tasks".to_string(),
-                crate::meta::agent_test_tasks_json(&[
-                    (
-                        "worker_version",
-                        "What version of the netflow worker is currently running? Return a single \
-                         row with one column named version.",
-                        "SELECT netflow.main.netflow_version() AS version",
-                    ),
-                    (
-                        "probe_unknown",
-                        "I have a one-byte blob that is not a flow datagram. Probe its flow-export \
-                         version; it should come back NULL. Return a single column named v.",
-                        "SELECT netflow.main.flow_version('\\x00'::BLOB) AS v",
-                    ),
-                    (
-                        "validate_garbage",
-                        "Classify the garbage two-byte blob 0xDEAD with the validator and return \
-                         just the failure kind as a single column named kind.",
-                        "SELECT netflow.main.well_formed('\\xde\\xad'::BLOB).kind AS kind",
-                    ),
-                ]),
+                crate::meta::agent_test_tasks_json(&agent_test_tasks()),
             ),
             ("vgi.author".to_string(), "Query.Farm".to_string()),
             (
@@ -160,11 +141,23 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                 ),
                 (
                     "vgi.doc_md".to_string(),
-                    "The single schema for the `netflow` worker — qualify calls as \
-                     `netflow.main.<fn>(...)`. It provides flow-export **decoders** (a captured \
-                     datagram column → normalized flow rows), **template-cache introspection**, \
-                     and lightweight **probe / validation** scalars. List the schema to see the \
-                     available functions and their signatures."
+                    "## The `netflow` schema\n\n\
+                     Everything the worker exposes lives in this one schema — qualify every call \
+                     as `netflow.main.<name>(...)`. Its job is to turn a column of raw captured \
+                     flow-export datagrams into normalized, typed flow rows, entirely in-engine \
+                     and with no collector stack.\n\n\
+                     The capabilities fall into a few groups:\n\n\
+                     - **Decoders** take a relation with a `datagram` BLOB column and return the \
+                     wide normalized flow schema, auto-detecting NetFlow v5/v9, IPFIX, and sFlow \
+                     v5 (or restricting to a single family).\n\
+                     - **Template-cache introspection** projects the per-exporter, \
+                     per-observation-domain templates the stateful v9/IPFIX decoders have learned \
+                     so far in the session.\n\
+                     - **Probe / validation scalars** identify or structurally validate a single \
+                     datagram cheaply, without running a full decode.\n\n\
+                     A small **reference** table lists the flow-export formats the worker \
+                     understands and which decoder handles each, so an agent can orient before \
+                     calling anything. Browse that first, then reach for the matching decoder."
                         .to_string(),
                 ),
                 (
@@ -174,7 +167,10 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                      rows.\"},{\"name\":\"introspection\",\"description\":\"Inspect the learned \
                      per-exporter, per-observation-domain template cache that stateful v9/IPFIX \
                      decode depends on.\"},{\"name\":\"probe\",\"description\":\"Lightweight \
-                     scalars that identify or validate a datagram without a full decode.\"}]"
+                     scalars that identify or validate a datagram without a full decode.\"},\
+                     {\"name\":\"reference\",\"description\":\"Curated lookup tables an agent can \
+                     browse to orient — e.g. the flow-export formats this worker decodes and the \
+                     function that handles each.\"}]"
                         .to_string(),
                 ),
                 (
@@ -188,12 +184,269 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                         .to_string(),
                 ),
             ],
-            views: Vec::new(),
+            views: vec![formats_view()],
             macros: Vec::new(),
             tables: Vec::new(),
         }],
         ..Default::default()
     }
+}
+
+/// A browsable, VALUES-backed reference view: the flow-export formats this worker
+/// decodes and which decoder handles each. Gives an agent a real table to list
+/// and query before it has to guess a decode function's arguments (VGI146), and —
+/// being pure `VALUES` — it scans with no network, credentials, or worker
+/// round-trip (VGI903/VGI911).
+fn formats_view() -> CatView {
+    CatView {
+        name: "supported_formats".to_string(),
+        definition: "SELECT format, version, rfc, template_stateful, decoder, flow_version, notes \
+             FROM (VALUES \
+             ('NetFlow', '5', 'Cisco NetFlow v5', false, 'netflow_decode', '5', \
+              'Fixed 48-byte records; no templates.'), \
+             ('NetFlow', '9', 'RFC 3954', true, 'netflow_decode', '9', \
+              'Template-based; the Template Set may arrive in an earlier datagram.'), \
+             ('IPFIX', '10', 'RFC 7011', true, 'ipfix_decode', '10', \
+              'Template-based, with enterprise and variable-length Information Elements.'), \
+             ('sFlow', '5', 'sFlow.org v5', false, 'sflow_decode', 'sflow5', \
+              'Packet sampling; byte/packet counts scaled by the sampling rate.')) \
+             AS t(format, version, rfc, template_stateful, decoder, flow_version, notes)"
+            .to_string(),
+        comment: Some(
+            "One row per flow-export format the worker decodes, with its version, defining spec, \
+             whether decoding is template-stateful, and the decode function that handles it."
+                .to_string(),
+        ),
+        tags: {
+            let mut tags = crate::meta::object_tags(
+                "Supported Flow-Export Formats",
+                "A curated reference listing every flow-export format this worker can decode — \
+                 NetFlow v5, NetFlow v9, IPFIX (v10), and sFlow v5 — with, for each, its wire \
+                 version, the RFC or vendor spec that defines it, whether decoding it is \
+                 template-stateful (needs a previously-seen template, as v9 and IPFIX do), the \
+                 `flow_version` value it produces in decoded rows, and which `netflow.main` \
+                 decode function handles it. An agent should browse this table first to learn \
+                 what is decodable and which function to call, rather than guessing a decoder's \
+                 arguments up front. It is a static VALUES-backed view, so it always returns \
+                 these four rows with no input.",
+                "Reference table of the flow-export formats the worker decodes (NetFlow v5/v9, \
+                 IPFIX, sFlow v5), each with its version, defining spec, template-stateful flag, \
+                 produced `flow_version` value, and handling decode function. Browse it to orient \
+                 before calling a decoder.",
+                "supported formats, formats, reference, netflow, ipfix, sflow, versions, decoders, \
+                 capabilities, catalog, template-stateful",
+            );
+            tags.push(("vgi.category".into(), "reference".into()));
+            tags.push(("domain".into(), "network-security".into()));
+            tags.push(("topic".into(), "netflow-ipfix-sflow".into()));
+            tags.push((
+                "vgi.example_queries".into(),
+                crate::meta::example_queries_json(&[
+                    (
+                        "List the template-stateful formats (the ones whose decode needs a learned \
+                         template) and which function decodes each.",
+                        "SELECT format, version, decoder \
+                         FROM netflow.main.supported_formats \
+                         WHERE template_stateful \
+                         ORDER BY version",
+                    ),
+                    (
+                        "Look up which decode function handles IPFIX and the flow_version value it \
+                         emits.",
+                        "SELECT decoder, flow_version, rfc \
+                         FROM netflow.main.supported_formats \
+                         WHERE format = 'IPFIX'",
+                    ),
+                ]),
+            ));
+            tags
+        },
+        column_comments: vec![
+            (
+                "format".to_string(),
+                "Flow-export protocol family: 'NetFlow', 'IPFIX', or 'sFlow'.".to_string(),
+            ),
+            (
+                "version".to_string(),
+                "Protocol version as it appears on the wire (e.g. '5', '9', '10').".to_string(),
+            ),
+            (
+                "rfc".to_string(),
+                "The RFC or vendor specification that defines the format.".to_string(),
+            ),
+            (
+                "template_stateful".to_string(),
+                "TRUE when decoding needs a previously-seen template (NetFlow v9, IPFIX); FALSE \
+                 for self-contained formats (NetFlow v5, sFlow)."
+                    .to_string(),
+            ),
+            (
+                "decoder".to_string(),
+                "The netflow.main table function that decodes this format (the unified `flows` \
+                 handles all of them)."
+                    .to_string(),
+            ),
+            (
+                "flow_version".to_string(),
+                "The value this format produces in the decoded rows' `flow_version` column."
+                    .to_string(),
+            ),
+            (
+                "notes".to_string(),
+                "One-line summary of the format's decoding characteristics.".to_string(),
+            ),
+        ],
+    }
+}
+
+/// The catalog-level agent-suitability suite (`vgi.agent_test_tasks`), graded by
+/// `vgi-lint simulate` / VGI920. Every object in the catalog is exercised by at
+/// least one task (VGI520). Each task hands the analyst a self-contained input
+/// (an inline hex datagram or a literal blob) and asks for a small deterministic
+/// result, so an honest solution grades cleanly against the hidden reference.
+fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
+    use crate::meta::{
+        AgentTask, SAMPLE_IPFIX_HEX, SAMPLE_SFLOW_HEX, SAMPLE_V5_HEX, SAMPLE_V9_HEX,
+    };
+    vec![
+        AgentTask {
+            name: "worker_version",
+            prompt: "What version of the netflow worker is currently running? Return a single \
+                     row with one column named version."
+                .to_string(),
+            reference_sql: vec!["SELECT netflow.main.netflow_version() AS version".to_string()],
+            ignore_column_names: false,
+            unordered: false,
+        },
+        AgentTask {
+            name: "probe_unknown",
+            prompt: "I have a one-byte blob that is not a flow datagram. Probe its flow-export \
+                     version; it should come back NULL. Return a single column named v."
+                .to_string(),
+            reference_sql: vec!["SELECT netflow.main.flow_version('\\x00'::BLOB) AS v".to_string()],
+            ignore_column_names: false,
+            unordered: false,
+        },
+        AgentTask {
+            name: "validate_garbage",
+            prompt: "Classify the garbage two-byte blob 0xDEAD with the validator and return \
+                     just the failure kind as a single column named kind."
+                .to_string(),
+            reference_sql: vec![
+                "SELECT netflow.main.well_formed('\\xde\\xad'::BLOB).kind AS kind".to_string(),
+            ],
+            ignore_column_names: false,
+            unordered: false,
+        },
+        AgentTask {
+            name: "count_v5_flows",
+            prompt: format!(
+                "I captured this NetFlow v5 export datagram as a hex string: {SAMPLE_V5_HEX}. \
+                 Decode it with the unified flow decoder and tell me how many normalized flow \
+                 rows it yields. Return one row, one column named flow_count."
+            ),
+            reference_sql: vec![format!(
+                "SELECT count(*) AS flow_count \
+                 FROM netflow.main.flows((SELECT from_hex('{SAMPLE_V5_HEX}') AS datagram))"
+            )],
+            ignore_column_names: true,
+            unordered: false,
+        },
+        AgentTask {
+            name: "decode_v9_dst_port",
+            prompt: format!(
+                "This is a NetFlow v9 export datagram in hex (it carries its template and one \
+                 data record): {SAMPLE_V9_HEX}. Decode it with the NetFlow-specific decoder and \
+                 return the layer-4 destination port of the single decoded flow. One row, one \
+                 column named dst_port."
+            ),
+            reference_sql: vec![format!(
+                "SELECT dst_port \
+                 FROM netflow.main.netflow_decode((SELECT from_hex('{SAMPLE_V9_HEX}') AS datagram))"
+            )],
+            ignore_column_names: true,
+            unordered: false,
+        },
+        AgentTask {
+            name: "decode_ipfix_protocol",
+            prompt: format!(
+                "Decode this IPFIX (version 10) datagram given as hex: {SAMPLE_IPFIX_HEX}. Return \
+                 the IP protocol number of the decoded flow. One row, one column named protocol."
+            ),
+            reference_sql: vec![format!(
+                "SELECT protocol \
+                 FROM netflow.main.ipfix_decode((SELECT from_hex('{SAMPLE_IPFIX_HEX}') AS datagram))"
+            )],
+            ignore_column_names: true,
+            unordered: false,
+        },
+        AgentTask {
+            name: "count_sflow_samples",
+            prompt: format!(
+                "Decode this sFlow v5 datagram given as hex: {SAMPLE_SFLOW_HEX}. Count how many \
+                 flow-sample rows it produces — that is, decoded rows that carry a non-NULL \
+                 destination port (counter samples have no ports). One row, one column named \
+                 flow_samples."
+            ),
+            reference_sql: vec![format!(
+                "SELECT count(*) AS flow_samples \
+                 FROM netflow.main.sflow_decode((SELECT from_hex('{SAMPLE_SFLOW_HEX}') AS datagram)) \
+                 WHERE dst_port IS NOT NULL"
+            )],
+            ignore_column_names: true,
+            unordered: false,
+        },
+        AgentTask {
+            name: "read_export_header",
+            prompt: format!(
+                "Without fully decoding its records, read just the export header of this NetFlow \
+                 v5 datagram given as hex: {SAMPLE_V5_HEX}. Return its protocol version and its \
+                 record count, in that order — one row, a `version` column then a `records` \
+                 column."
+            ),
+            reference_sql: vec![format!(
+                "SELECT netflow.main.header(from_hex('{SAMPLE_V5_HEX}')::BLOB)['version'] AS version, \
+                 netflow.main.header(from_hex('{SAMPLE_V5_HEX}')::BLOB)['count'] AS records"
+            )],
+            ignore_column_names: true,
+            unordered: false,
+        },
+        AgentTask {
+            name: "inspect_learned_templates",
+            prompt: format!(
+                "Two steps, in one session. First decode this IPFIX datagram (hex) scoping the \
+                 template cache to the exporter id 'sim-tmpl-probe': {SAMPLE_IPFIX_HEX}. Then \
+                 inspect the worker's template cache, filtered to that same exporter, and tell me \
+                 how many templates it learned. Your final answer is the count — one row, one \
+                 column named n."
+            ),
+            reference_sql: vec![
+                format!(
+                    "SELECT count(*) FROM netflow.main.ipfix_decode((SELECT \
+                     from_hex('{SAMPLE_IPFIX_HEX}') AS datagram, 'sim-tmpl-probe' AS exporter))"
+                ),
+                "SELECT count(*) AS n FROM netflow.main.templates(exporter => 'sim-tmpl-probe')"
+                    .to_string(),
+            ],
+            ignore_column_names: true,
+            unordered: false,
+        },
+        AgentTask {
+            name: "browse_stateful_formats",
+            prompt: "Using only the worker's own reference table of supported formats, list the \
+                     decode functions for the flow-export formats whose decoding is \
+                     template-stateful (needs a previously-seen template). Return one `decoder` \
+                     column, ordered alphabetically."
+                .to_string(),
+            reference_sql: vec![
+                "SELECT decoder FROM netflow.main.supported_formats \
+                 WHERE template_stateful ORDER BY decoder"
+                    .to_string(),
+            ],
+            ignore_column_names: true,
+            unordered: false,
+        },
+    ]
 }
 
 fn main() {

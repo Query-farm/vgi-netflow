@@ -46,6 +46,40 @@ pub fn executable_examples_json(examples: &[(&str, &str)]) -> String {
     format!("[{}]", items.join(","))
 }
 
+/// Encode `(name, type, description)` triples as the `vgi.result_columns_schema`
+/// JSON array (VGI307/VGI321): one object per returned column, **in the exact
+/// order the function emits them** (VGI910 also checks column order). Each `type`
+/// must be a real DuckDB type that `typeof(NULL::<type>)` canonicalizes to the
+/// same string DuckDB's `DESCRIBE` reports for that column, or VGI910 flags a
+/// type mismatch under `--execute`.
+pub fn result_columns_schema_json(cols: &[(&str, &str, &str)]) -> String {
+    fn esc(s: &str) -> String {
+        s.replace('\\', "\\\\")
+            .replace('"', "\\\"")
+            .replace('\n', "\\n")
+    }
+    let items: Vec<String> = cols
+        .iter()
+        .map(|(name, ty, description)| {
+            format!(
+                "{{\"name\":\"{}\",\"type\":\"{}\",\"description\":\"{}\"}}",
+                esc(name),
+                esc(ty),
+                esc(description)
+            )
+        })
+        .collect();
+    format!("[{}]", items.join(","))
+}
+
+/// Encode `(description, sql)` pairs as the `vgi.example_queries` JSON array
+/// (VGI502/503): illustrative, catalog-qualified examples that are *shown* (not
+/// executed by the example-execution rules, unlike `vgi.executable_examples`).
+pub fn example_queries_json(examples: &[(&str, &str)]) -> String {
+    // Same `{description, sql}` object shape as executable examples.
+    executable_examples_json(examples)
+}
+
 /// Encode comma-separated keywords as the JSON array of strings that
 /// `vgi.keywords` requires (VGI138).
 pub fn keywords_json(keywords: &str) -> String {
@@ -61,11 +95,24 @@ pub fn keywords_json(keywords: &str) -> String {
     format!("[{}]", items.join(","))
 }
 
-/// Build the `vgi.agent_test_tasks` JSON value: a fixed suite of analyst tasks
-/// that `vgi-lint simulate` runs. Each `(name, prompt, reference_sql)` triple
-/// becomes a task object; the `prompt` is shown to the simulated analyst while
-/// `reference_sql` (the canonical solution) is hidden and re-run live to grade.
-pub fn agent_test_tasks_json(tasks: &[(&str, &str, &str)]) -> String {
+/// One `vgi.agent_test_tasks` entry. `vgi-lint simulate` shows only `prompt` to
+/// the simulated analyst; `reference_sql` (the canonical solution — one or more
+/// statements run in order, the last statement's output being the graded result)
+/// is grader-only and never shown. `ignore_column_names` / `unordered` relax the
+/// strict result comparison for that task (values-only / order-insensitive).
+pub struct AgentTask {
+    pub name: &'static str,
+    pub prompt: String,
+    /// One statement (compared directly) or several run in order (e.g. warm the
+    /// template cache with a decode, then introspect it) — the terminal output
+    /// is the graded result.
+    pub reference_sql: Vec<String>,
+    pub ignore_column_names: bool,
+    pub unordered: bool,
+}
+
+/// Build the catalog-level `vgi.agent_test_tasks` JSON array from a task suite.
+pub fn agent_test_tasks_json(tasks: &[AgentTask]) -> String {
     fn esc(s: &str) -> String {
         s.replace('\\', "\\\\")
             .replace('"', "\\\"")
@@ -73,12 +120,32 @@ pub fn agent_test_tasks_json(tasks: &[(&str, &str, &str)]) -> String {
     }
     let items: Vec<String> = tasks
         .iter()
-        .map(|(name, prompt, reference_sql)| {
+        .map(|t| {
+            // A single statement serializes as a plain string; several as a JSON
+            // array of strings (both accepted by the simulate grader).
+            let reference_sql = if t.reference_sql.len() == 1 {
+                format!("\"{}\"", esc(&t.reference_sql[0]))
+            } else {
+                let stmts: Vec<String> = t
+                    .reference_sql
+                    .iter()
+                    .map(|s| format!("\"{}\"", esc(s)))
+                    .collect();
+                format!("[{}]", stmts.join(","))
+            };
+            let mut extra = String::new();
+            if t.ignore_column_names {
+                extra.push_str(",\"ignore_column_names\":true");
+            }
+            if t.unordered {
+                extra.push_str(",\"unordered\":true");
+            }
             format!(
-                "{{\"name\":\"{}\",\"prompt\":\"{}\",\"reference_sql\":\"{}\"}}",
-                esc(name),
-                esc(prompt),
-                esc(reference_sql)
+                "{{\"name\":\"{}\",\"prompt\":\"{}\",\"reference_sql\":{}{}}}",
+                esc(t.name),
+                esc(&t.prompt),
+                reference_sql,
+                extra
             )
         })
         .collect();

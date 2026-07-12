@@ -118,19 +118,27 @@ impl TableFunction for Templates {
             "templates, template cache, introspection, ipfix, netflow, v9, fields, debug, layout",
         );
         tags.push(("vgi.category".into(), "introspection".into()));
+        // Structured result schema (VGI307/VGI321), in the exact order and with
+        // the canonical DuckDB types `DESCRIBE netflow.main.templates(...)`
+        // reports (kept in lockstep with `output_schema()` above).
         tags.push((
-            "vgi.result_columns_md".into(),
-            "| column | type | description |\n\
-             |---|---|---|\n\
-             | `exporter` | VARCHAR | Device the template came from. |\n\
-             | `obs_domain` | UINTEGER | Observation domain. |\n\
-             | `template_id` | USMALLINT | Template id. |\n\
-             | `kind` | VARCHAR | 'data' / 'options'. |\n\
-             | `field_count` | UINTEGER | Field specifier count. |\n\
-             | `fields` | STRUCT[] | Ordered field specifiers. |\n\
-             | `first_seen` / `last_seen` | TIMESTAMPTZ | Seen stats. |\n\
-             | `use_count` | UBIGINT | Decode count. |"
-                .into(),
+            "vgi.result_columns_schema".into(),
+            crate::meta::result_columns_schema_json(&[
+                ("exporter", "VARCHAR", "Source device the template was learned from."),
+                ("obs_domain", "UINTEGER", "Observation domain (v9 source-id / IPFIX) the template id is scoped to."),
+                ("template_id", "USMALLINT", "The template id a Data Set references."),
+                ("kind", "VARCHAR", "'data' for a data template or 'options' for an options template."),
+                ("field_count", "UINTEGER", "Number of field specifiers in the template."),
+                (
+                    "fields",
+                    "STRUCT(ie_id USMALLINT, enterprise UINTEGER, length USMALLINT, \"name\" VARCHAR, ie_type VARCHAR)[]",
+                    "The ordered field specifiers (ie_id, enterprise PEN, length, IE name, IE type).",
+                ),
+                ("scope_field_count", "USMALLINT", "Leading scope fields on an options template; 0 for a data template."),
+                ("first_seen", "TIMESTAMP WITH TIME ZONE", "When this template id was first seen."),
+                ("last_seen", "TIMESTAMP WITH TIME ZONE", "When this template was most recently seen / used."),
+                ("use_count", "UBIGINT", "How many data records have been decoded against it."),
+            ]),
         ));
         // Runnable example: learn a template by decoding an IPFIX datagram, then
         // introspect it. Two statements on one connection so the global cache
@@ -150,9 +158,29 @@ impl TableFunction for Templates {
                 ),
             )]),
         ));
-        // No native Meta.examples here: a bare `templates()` on a cold worker
-        // returns no rows (VGI902), so the runnable demonstration lives in the
-        // two-statement vgi.executable_examples above (decode → introspect).
+        // Illustrative example (shown to humans/agents and the doc reviewer). It
+        // is the same self-contained decode → introspect pair: `templates()` is
+        // only meaningful *after* a decode has populated the cache in the same
+        // session, so a lone `templates()` call is a poor demonstration. This
+        // runs (VGI901) but does not trip the return-rows rule (VGI902 can't wrap
+        // a two-statement example), so no bare-cold-worker empty result is
+        // reported. No native `Meta.examples` for the same cold-cache reason.
+        tags.push((
+            "vgi.example_queries".into(),
+            crate::meta::example_queries_json(&[(
+                "The template cache is populated by decoding: first decode an IPFIX datagram \
+                 scoped to an exporter, then introspect the cache for that exporter to see the \
+                 learned template's id, kind (data/options), and field count. Reads the same \
+                 session's cache, so run the decode first.",
+                &format!(
+                    "SELECT count(*) FROM netflow.main.ipfix_decode((SELECT from_hex('{hex}') \
+                     AS datagram, 'doc-exporter' AS exporter)); \
+                     SELECT exporter, template_id, kind, field_count \
+                     FROM netflow.main.templates(exporter => 'doc-exporter')",
+                    hex = crate::meta::SAMPLE_IPFIX_HEX
+                ),
+            )]),
+        ));
         FunctionMetadata {
             description: "Project the live v9/IPFIX template cache".into(),
             tags,
