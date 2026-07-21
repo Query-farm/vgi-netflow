@@ -35,12 +35,12 @@ impl ScalarFunction for WellFormed {
     fn metadata(&self) -> FunctionMetadata {
         let mut tags = crate::meta::object_tags(
             "Flow Datagram Validation",
-            "Validate the structure of a flow-export datagram (BLOB) without a full decode, \
-             returning STRUCT(ok BOOL, version VARCHAR, error VARCHAR, kind VARCHAR). `kind` is one \
+            "Validate the structure of a flow-export datagram (`BLOB`) without a full decode, \
+             returning `STRUCT(ok BOOL, version VARCHAR, error VARCHAR, kind VARCHAR)`. `kind` is one \
              of truncated, bad-version, set-length-overrun, bad-ipfix-set, short-record, or \
              not-a-flow-datagram. Never panics — a hostile/garbage blob returns ok=false rather \
              than crashing the scan. Use it to triage a capture before decoding.",
-            "Validate a flow datagram BLOB's structure → STRUCT(ok, version, error, kind). Never \
+            "Validate a flow datagram `BLOB`'s structure → `STRUCT(ok, version, error, kind)`. Never \
              panics on garbage.",
             "well formed, validate, validation, malformed, truncated, triage, netflow, ipfix, sflow",
         );
@@ -61,14 +61,24 @@ impl ScalarFunction for WellFormed {
                 ),
             ]),
         ));
+        // Described illustrative example — byte-identical SQL to the native
+        // `Meta.example`, so the merged example set carries a description (VGI515).
+        let example_sql = format!(
+            "SELECT netflow.main.well_formed(from_hex('{hex}')::BLOB) AS validation",
+            hex = crate::meta::SAMPLE_V5_HEX
+        );
+        tags.push((
+            "vgi.example_queries".into(),
+            crate::meta::example_queries_json(&[(
+                "Triage a captured datagram — STRUCT(ok, version, error, kind) — before decoding.",
+                &example_sql,
+            )]),
+        ));
         FunctionMetadata {
             description: "Validate a flow datagram's structure (never panics)".into(),
             return_type: Some(DataType::Struct(struct_fields())),
             examples: vec![FunctionExample {
-                sql: format!(
-                    "SELECT netflow.main.well_formed(from_hex('{hex}')::BLOB) AS validation",
-                    hex = crate::meta::SAMPLE_V5_HEX
-                ),
+                sql: example_sql,
                 description: "Triage a captured datagram — STRUCT(ok, version, error, kind) — \
                               before decoding."
                     .into(),

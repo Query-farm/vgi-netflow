@@ -22,7 +22,7 @@ crates/netflow-worker/   # thin Arrow / VGI adapter over netflow-core
   src/main.rs            #   catalog `netflow`, schema `main`; registers everything
   src/arrow_map.rs       #   FlowRecord → Arrow (INET struct, MAP, TIMESTAMPTZ); flow_schema()
   src/state.rs           #   load/store the TemplateCache via VGI storage (scan state)
-  src/scalar/            #   netflow_version, flow_version, header, well_formed
+  src/scalar/            #   flow_version, header, well_formed
   src/table/             #   templates() — cache introspection (producer)
   src/table_in_out/      #   flows, netflow_decode, ipfix_decode, sflow_decode (relation in)
 test/sql/*.test          # haybarn SQLLogic E2E

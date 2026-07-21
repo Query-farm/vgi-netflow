@@ -221,14 +221,14 @@ fn tags_for(name: &str) -> Vec<(String, String)> {
             "Auto-detect the version of each captured flow-export datagram (NetFlow v5/v9, IPFIX, \
              sFlow v5) and decode it to one normalized wide flow row per record: src/dst as INET, \
              ports, protocol, byte/packet counts, TCP flags, resolved flow start/end timestamps, \
-             AS numbers, interfaces, next hop, ToS, sampling, plus a raw_fields MAP of every \
+             AS numbers, interfaces, next hop, ToS, sampling, plus a raw_fields `MAP` of every \
              unmapped Information Element. Threads a per-exporter, per-observation-domain template \
              cache across rows and scan batches so v9/IPFIX data decodes against templates seen in \
              earlier datagrams. Pass a relation carrying a `datagram` column of captured bytes \
              (and optionally an `exporter` column so template ids do not collide across devices); \
              the runnable example shows the exact call shape. Feed datagrams in capture order.",
             "Decode any flow-export datagram to normalized flow rows (the wide schema). Pass a \
-             relation with a `datagram` BLOB column (and optional `exporter` / `obs_domain` / \
+             relation with a `datagram` `BLOB` column (and optional `exporter` / `obs_domain` / \
              `mode`). Auto-detects v5/v9/IPFIX/sFlow and threads the template cache.",
             "netflow, ipfix, sflow, flow, flows, decode, network, security, observability, \
              template, datagram, normalize, relation, lateral",
@@ -236,7 +236,7 @@ fn tags_for(name: &str) -> Vec<(String, String)> {
         "netflow_decode" => (
             "NetFlow v5/v9 Decode (relation in)",
             "Decode NetFlow v5 (fixed) and NetFlow v9 (RFC 3954, template-based) datagrams from a \
-             relation's `datagram` BLOB column to the normalized flow schema. v9 threads the \
+             relation's `datagram` `BLOB` column to the normalized flow schema. v9 threads the \
              template cache; an IPFIX or sFlow datagram yields a decode-error diagnostic. Pass an \
              optional `exporter` column for per-device cache scoping.",
             "Decode NetFlow v5/v9 datagrams from a relation's `datagram` column to normalized \
@@ -245,7 +245,7 @@ fn tags_for(name: &str) -> Vec<(String, String)> {
         ),
         "ipfix_decode" => (
             "IPFIX Decode (relation in)",
-            "Decode IPFIX (RFC 7011, version 10) datagrams from a relation's `datagram` BLOB column \
+            "Decode IPFIX (RFC 7011, version 10) datagrams from a relation's `datagram` `BLOB` column \
              to the normalized flow schema with full template, options-template, enterprise-IE \
              (private enterprise number) and variable-length IE handling. The headline \
              template-stateful decoder. A non-IPFIX datagram yields a decode-error diagnostic.",
@@ -256,7 +256,7 @@ fn tags_for(name: &str) -> Vec<(String, String)> {
         "sflow_decode" => (
             "sFlow v5 Decode (relation in)",
             "Decode sFlow v5 (sflow.org / InMon) packet-sampling datagrams from a relation's \
-             `datagram` BLOB column to the normalized flow schema. Flow samples (sampled headers / \
+             `datagram` `BLOB` column to the normalized flow schema. Flow samples (sampled headers / \
              sampled IPv4/IPv6) yield 5-tuple rows with byte/packet counts scaled by the sampling \
              rate; counter samples yield rows with the counters in raw_fields. Stateless.",
             "Decode sFlow v5 datagrams from a relation's `datagram` column. Stateless; sampled \
@@ -280,6 +280,14 @@ fn tags_for(name: &str) -> Vec<(String, String)> {
     tags.push((
         "vgi.executable_examples".into(),
         crate::meta::executable_examples_json(&[(ex_desc, ex_sql.as_str())]),
+    ));
+    // Described illustrative example — byte-identical SQL to the native
+    // `Meta.example` (`doc_example`), so the merged example set (native carrier +
+    // this tag) carries a human-readable description (VGI515).
+    let doc_ex = doc_example(name);
+    tags.push((
+        "vgi.example_queries".into(),
+        crate::meta::example_queries_json(&[(doc_ex.description.as_str(), doc_ex.sql.as_str())]),
     ));
     tags
 }

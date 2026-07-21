@@ -31,8 +31,8 @@ pub use inet::InetVal;
 pub use normalize::FlowRecord;
 pub use wellformed::{well_formed, WellFormed};
 
-/// The worker's build version (the crate's Cargo version), surfaced by the
-/// `netflow_version()` scalar.
+/// The worker's build version (the crate's Cargo version), surfaced as the
+/// catalog `implementation_version`.
 pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }

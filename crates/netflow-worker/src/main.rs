@@ -55,9 +55,9 @@ fn catalog_metadata(name: &str) -> CatalogModel {
             (
                 "vgi.doc_llm".to_string(),
                 "Decode raw network flow-export datagrams (NetFlow v5/v9, IPFIX, sFlow v5) from a \
-                 BLOB column into typed, normalized flow rows: src/dst as INET, ports, protocol, \
+                 `BLOB` column into typed, normalized flow rows: src/dst as INET, ports, protocol, \
                  byte/packet counts, TCP flags, resolved flow start/end timestamps, AS numbers, \
-                 interfaces, next hop, ToS, sampling, plus a raw_fields MAP of every unmapped \
+                 interfaces, next hop, ToS, sampling, plus a raw_fields `MAP` of every unmapped \
                  Information Element. The hard part — and the value — is template-stateful v9/IPFIX \
                  decode: a Data Set carries only a template id, and the matching Template Set may \
                  have arrived in a much earlier datagram, so the worker maintains a per-exporter, \
@@ -65,7 +65,7 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                  batch boundaries and HTTP rehydration. Use it for SQL forensics over captured flow \
                  archives — join flows to geoip/ASN, threat-intel, and asset inventory, at scale, \
                  with no collector. Reach for it whenever you have raw exporter datagrams (or UDP \
-                 payloads carved out of pcap) in a BLOB column and want queryable, normalized flow \
+                 payloads carved out of pcap) in a `BLOB` column and want queryable, normalized flow \
                  rows without standing up a collector stack."
                     .to_string(),
             ),
@@ -109,6 +109,10 @@ fn catalog_metadata(name: &str) -> CatalogModel {
             ),
         ],
         source_url: Some("https://github.com/Query-farm/vgi-netflow".to_string()),
+        // The worker's own build version (the crate's Cargo version), surfaced on
+        // the catalog so an agent reads it from vgi_catalogs() without spending a
+        // query — replaces the removed parameterless netflow_version() scalar.
+        implementation_version: Some(netflow_core::version().to_string()),
         schemas: vec![CatSchema {
             name: "main".to_string(),
             comment: Some(
@@ -135,8 +139,8 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                      introspection, and lightweight probe/validation scalars. The decoders thread \
                      a per-exporter, per-observation-domain template cache as externalized scan \
                      state so template-based v9/IPFIX data decodes against templates seen in \
-                     earlier datagrams. List the schema to discover the individual functions and \
-                     their signatures."
+                     earlier datagrams. Start from `supported_formats` to see which formats decode \
+                     and which function handles each, then call that decoder."
                         .to_string(),
                 ),
                 (
@@ -147,7 +151,7 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                      flow-export datagrams into normalized, typed flow rows, entirely in-engine \
                      and with no collector stack.\n\n\
                      The capabilities fall into a few groups:\n\n\
-                     - **Decoders** take a relation with a `datagram` BLOB column and return the \
+                     - **Decoders** take a relation with a `datagram` `BLOB` column and return the \
                      wide normalized flow schema, auto-detecting NetFlow v5/v9, IPFIX, and sFlow \
                      v5 (or restricting to a single family).\n\
                      - **Template-cache introspection** projects the per-exporter, \
@@ -175,13 +179,28 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                 ),
                 (
                     "vgi.example_queries".to_string(),
-                    "SELECT netflow.main.netflow_version();\n\
-                     SELECT netflow.main.flow_version(content) FROM read_blob('caps/*.dat');\n\
-                     SELECT src_addr::INET, dst_addr::INET, bytes \
-                     FROM netflow.main.flows((FROM (SELECT content AS datagram, filename AS exporter \
-                     FROM read_blob('caps/*.dat')))) WHERE diagnostics IS NULL;\n\
-                     SELECT * FROM netflow.main.templates();"
-                        .to_string(),
+                    crate::meta::example_queries_json(&[
+                        (
+                            "Route a mixed column of captured datagrams: label each by its \
+                             flow-export version before decoding.",
+                            "SELECT netflow.main.flow_version(content) AS version, count(*) \
+                             FROM read_blob('caps/*.dat') GROUP BY version",
+                        ),
+                        (
+                            "Decode a capture archive to normalized flow rows and join source \
+                             addresses to a threat-intel prefix list via INET containment.",
+                            "SELECT f.src_addr::INET AS src, f.dst_port, f.bytes \
+                             FROM netflow.main.flows((FROM (SELECT content AS datagram, \
+                             filename AS exporter FROM read_blob('caps/*.dat')))) f \
+                             WHERE f.diagnostics IS NULL AND f.src_addr::INET <<= '10.0.0.0/8'::INET",
+                        ),
+                        (
+                            "After decoding, inspect which v9/IPFIX templates the worker learned \
+                             in this session, per exporter.",
+                            "SELECT exporter, template_id, kind, field_count \
+                             FROM netflow.main.templates() ORDER BY exporter, template_id",
+                        ),
+                    ]),
                 ),
             ],
             views: vec![formats_view()],
@@ -309,15 +328,6 @@ fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
         AgentTask, SAMPLE_IPFIX_HEX, SAMPLE_SFLOW_HEX, SAMPLE_V5_HEX, SAMPLE_V9_HEX,
     };
     vec![
-        AgentTask {
-            name: "worker_version",
-            prompt: "What version of the netflow worker is currently running? Return a single \
-                     row with one column named version."
-                .to_string(),
-            reference_sql: vec!["SELECT netflow.main.netflow_version() AS version".to_string()],
-            ignore_column_names: false,
-            unordered: false,
-        },
         AgentTask {
             name: "probe_unknown",
             prompt: "I have a one-byte blob that is not a flow datagram. Probe its flow-export \

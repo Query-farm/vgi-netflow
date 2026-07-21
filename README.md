@@ -93,7 +93,6 @@ never collide across devices.
 | `flow_version(blob)` | scalar | `'5'` / `'9'` / `'10'` / `'sflow5'` / `NULL` |
 | `header(blob)` | scalar | `STRUCT(version, count, sys_uptime, export_time, sequence, obs_domain)` |
 | `well_formed(blob)` | scalar | `STRUCT(ok, version, error, kind)` — never panics on garbage |
-| `netflow_version()` | scalar | Worker build version string |
 
 Input relation columns (read by name, case-insensitive): **`datagram`** (BLOB,
 required; also accepts `content` / `blob`, or the first binary column),

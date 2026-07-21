@@ -45,13 +45,13 @@ impl ScalarFunction for Header {
     fn metadata(&self) -> FunctionMetadata {
         let mut tags = crate::meta::object_tags(
             "Flow Export Header",
-            "Decode just the export header of a flow-export datagram (BLOB) without decoding any \
-             records: version, record count, sysUptime, export_time (TIMESTAMPTZ), sequence \
+            "Decode just the export header of a flow-export datagram (`BLOB`) without decoding any \
+             records: version, record count, sysUptime, export_time (`TIMESTAMPTZ`), sequence \
              number, and observation domain. Use it for sequence-gap analysis and dedup over a \
              large column of datagrams cheaply. sFlow fields map best-effort (no count/sys_uptime). \
-             Returns a STRUCT; NULL on a non-flow datagram.",
-            "Decode a flow datagram's export header to a STRUCT(version, count, sys_uptime, \
-             export_time, sequence, obs_domain). NULL if not a flow datagram.",
+             Returns a `STRUCT`; NULL on a non-flow datagram.",
+            "Decode a flow datagram's export header to a `STRUCT(version, count, sys_uptime, \
+             export_time, sequence, obs_domain)`. NULL if not a flow datagram.",
             "header, export header, sequence, gap detection, dedup, version, obs_domain, netflow, ipfix, sflow",
         );
         tags.push(("vgi.category".into(), "probe".into()));
@@ -71,14 +71,24 @@ impl ScalarFunction for Header {
                 ),
             ]),
         ));
+        // Described illustrative example — byte-identical SQL to the native
+        // `Meta.example`, so the merged example set carries a description (VGI515).
+        let example_sql = format!(
+            "SELECT netflow.main.header(from_hex('{hex}')::BLOB).sequence AS sequence",
+            hex = crate::meta::SAMPLE_V5_HEX
+        );
+        tags.push((
+            "vgi.example_queries".into(),
+            crate::meta::example_queries_json(&[(
+                "Read a datagram's export sequence number (for gap / dedup analysis).",
+                &example_sql,
+            )]),
+        ));
         FunctionMetadata {
             description: "Decode a flow datagram's export header".into(),
             return_type: Some(DataType::Struct(struct_fields())),
             examples: vec![FunctionExample {
-                sql: format!(
-                    "SELECT netflow.main.header(from_hex('{hex}')::BLOB).sequence AS sequence",
-                    hex = crate::meta::SAMPLE_V5_HEX
-                ),
+                sql: example_sql,
                 description: "Read a datagram's export sequence number (for gap / dedup analysis)."
                     .into(),
                 expected_output: None,

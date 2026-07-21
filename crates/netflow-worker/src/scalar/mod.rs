@@ -1,8 +1,7 @@
-//! Scalar functions: `netflow_version`, `flow_version`, `header`, `well_formed`.
+//! Scalar functions: `flow_version`, `header`, `well_formed`.
 
 mod flow_version;
 mod header;
-mod version;
 mod well_formed;
 
 use arrow_array::cast::AsArray;
@@ -13,7 +12,6 @@ use vgi_rpc::{Result, RpcError};
 
 /// Register every scalar function on the worker.
 pub fn register(worker: &mut Worker) {
-    worker.register_scalar(version::NetflowVersion);
     worker.register_scalar(flow_version::FlowVersion);
     worker.register_scalar(header::Header);
     worker.register_scalar(well_formed::WellFormed);

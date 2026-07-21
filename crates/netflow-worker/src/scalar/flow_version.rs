@@ -23,12 +23,12 @@ impl ScalarFunction for FlowVersion {
     fn metadata(&self) -> FunctionMetadata {
         let mut tags = crate::meta::object_tags(
             "Flow Datagram Version Probe",
-            "Probe the leading bytes of a captured flow-export datagram (BLOB) and return its wire \
+            "Probe the leading bytes of a captured flow-export datagram (`BLOB`) and return its wire \
              version: '5' (NetFlow v5), '9' (NetFlow v9), '10' (IPFIX), or 'sflow5' (sFlow v5); \
              NULL when the bytes match no known flow header. Cheap — it reads only the header and \
              allocates no record tree. Use it to route or filter a mixed column of datagrams \
              before calling the decoders.",
-            "Return the flow-export version of a datagram BLOB: '5' / '9' / '10' / 'sflow5', or \
+            "Return the flow-export version of a datagram `BLOB`: '5' / '9' / '10' / 'sflow5', or \
              NULL if unrecognized. Header-only, no full decode.",
             "flow version, netflow version, ipfix, sflow, probe, detect, version, datagram, header",
         );
@@ -49,14 +49,25 @@ impl ScalarFunction for FlowVersion {
                 ),
             ]),
         ));
+        // Described illustrative example — byte-identical SQL to the native
+        // `Meta.example` below, so the merged example set (native carrier +
+        // this tag) carries a human-readable description (VGI515).
+        let example_sql = format!(
+            "SELECT netflow.main.flow_version(from_hex('{hex}')::BLOB) AS flow_version",
+            hex = crate::meta::SAMPLE_V5_HEX
+        );
+        tags.push((
+            "vgi.example_queries".into(),
+            crate::meta::example_queries_json(&[(
+                "Detect a datagram's flow-export version before routing it to a decoder.",
+                &example_sql,
+            )]),
+        ));
         FunctionMetadata {
             description: "Probe a flow-export datagram's wire version".into(),
             return_type: Some(DataType::Utf8),
             examples: vec![FunctionExample {
-                sql: format!(
-                    "SELECT netflow.main.flow_version(from_hex('{hex}')::BLOB) AS flow_version",
-                    hex = crate::meta::SAMPLE_V5_HEX
-                ),
+                sql: example_sql,
                 description:
                     "Detect a datagram's flow-export version before routing it to a decoder.".into(),
                 expected_output: None,

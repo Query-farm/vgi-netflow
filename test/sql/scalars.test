@@ -1,5 +1,5 @@
 # name: test/sql/scalars.test
-# description: Scalar probes — netflow_version, flow_version, header, well_formed.
+# description: Scalar probes — flow_version, header, well_formed.
 # group: [vgi_netflow]
 
 require-env VGI_NETFLOW_WORKER
@@ -15,12 +15,6 @@ LOAD inet;
 
 statement ok
 ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION '${VGI_NETFLOW_WORKER}');
-
-# Worker version is a non-null semver string.
-query I
-SELECT netflow.main.netflow_version() IS NOT NULL;
-----
-true
 
 # flow_version probes the leading bytes of each captured datagram.
 query T
