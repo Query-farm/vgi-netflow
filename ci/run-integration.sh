@@ -139,10 +139,17 @@ done
 
 # Stage the golden datagram fixtures the .test files read via repo-relative
 # `read_blob('test/data/*.dat')` paths (the runner cd's into $STAGE, so these
-# must live under it). Regenerate them first so the suite always tests the
-# current byte vectors.
+# must live under it). When a Rust toolchain is present we regenerate them so
+# the suite always tests the current byte vectors; on a runner without cargo
+# (e.g. the docker image_test, which runs the built container, not source) we
+# fall back to the committed golden fixtures — the same bytes gen_fixtures emits.
 mkdir -p "$STAGE/test/data"
-( cd "$REPO" && cargo run -q -p netflow-core --example gen_fixtures -- "$STAGE/test/data" >/dev/null )
+if command -v cargo >/dev/null 2>&1; then
+  ( cd "$REPO" && cargo run -q -p netflow-core --example gen_fixtures -- "$STAGE/test/data" >/dev/null )
+else
+  echo "cargo not found — staging committed golden fixtures from test/data/*.dat"
+  cp "$REPO"/test/data/*.dat "$STAGE/test/data/"
+fi
 
 cd "$STAGE"
 
