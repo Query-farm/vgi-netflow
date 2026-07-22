@@ -8,13 +8,15 @@ authors.workspace = true
 repository.workspace = true
 description = "VGI worker decoding NetFlow v5/v9, IPFIX, and sFlow v5 flow-export datagrams (BLOB) into normalized flow rows for DuckDB over Apache Arrow"
 
+[lib]
+name = "netflow_worker"
+path = "src/lib.rs"
+
 [[bin]]
 name = "netflow-worker"
 path = "src/main.rs"
 
 [dependencies]
-vgi.workspace = true
-vgi-rpc.workspace = true
 arrow.workspace = true
 arrow-array.workspace = true
 arrow-buffer.workspace = true
@@ -24,4 +26,17 @@ serde.workspace = true
 serde_json.workspace = true
 chrono.workspace = true
 log = "0.4"
+
+# --- Native ---------------------------------------------------------------
+# The SDK's real default features — unchanged from before the wasm split.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+vgi = { workspace = true, features = ["sqlite", "transport-http"] }
+vgi-rpc = { workspace = true, features = ["http"] }
 env_logger = "0.11"
+
+# --- wasm32 ---------------------------------------------------------------
+# No sqlite (C) and no HTTP transport (tokio/mio/axum); the bincode stream codec
+# is what the SAB byte-channel transport needs.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+vgi = { workspace = true }
+vgi-rpc = { workspace = true, features = ["stream-codec"] }

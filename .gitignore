@@ -6,3 +6,6 @@ duckdb_unittest_tempdir/
 
 # vgi-lint agent-check / simulate caches
 .vgi-*-cache.json
+
+# Browser build output (wasm/build.sh)
+/wasm/dist
