@@ -26,5 +26,3 @@ fail_on = "info"
 enabled = true
 mode = "run"
 
-[tool.vgi-lint-check.options]
-column_comment_min_ratio = 0.8
