@@ -4,8 +4,8 @@
 # distribution's unittest runner (which ships the `vgi` extension via community).
 #
 # Prerequisites (one-time):
-#   uv tool install haybarn-unittest                       # the DuckDB unittest binary
-#   echo "INSTALL vgi FROM community;" | uvx haybarn-cli   # install the vgi extension
+#   uv tool install 'haybarn-unittest<2'                       # the DuckDB unittest binary
+#   echo "INSTALL vgi FROM community;" | uvx --from 'haybarn-cli<2' haybarn-cli   # install the vgi extension
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,7 +14,7 @@ cd "$REPO_ROOT"
 UNITTEST="${VGI_UNITTEST:-$(command -v haybarn-unittest || true)}"
 if [[ -z "$UNITTEST" || ! -x "$UNITTEST" ]]; then
     echo "ERROR: haybarn-unittest not found. Install it with:" >&2
-    echo "       uv tool install haybarn-unittest" >&2
+    echo "       uv tool install 'haybarn-unittest<2'" >&2
     exit 1
 fi
 
