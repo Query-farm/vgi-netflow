@@ -1,0 +1,35 @@
+# Private graders for the agent-suitability suite (`vgi-lint simulate`).
+#
+# The prompts are published in the catalog's vgi.agent_test_tasks tag
+# (crates/netflow-worker/src/lib.rs); the answers live here, keyed by task name, so the
+# agent being graded never sees them. vgi-lint discovers this file in the
+# directory it runs from (the repo root in CI).
+
+tasks:
+  - name: "probe_unknown"
+    reference_sql: "SELECT netflow.main.flow_version('\\x00'::BLOB) AS v"
+  - name: "validate_garbage"
+    reference_sql: "SELECT netflow.main.well_formed('\\xde\\xad'::BLOB).kind AS kind"
+  - name: "count_v5_flows"
+    reference_sql: "SELECT count(*) AS flow_count FROM netflow.main.flows((SELECT from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000') AS datagram))"
+    ignore_column_names: true
+  - name: "decode_v9_dst_port"
+    reference_sql: "SELECT dst_port FROM netflow.main.netflow_decode((SELECT from_hex('00090002000186a06553f1000000001400000001000000240100000700080004000c000400070002000b000200040001000200040001000401000019ac100001ac100002045700160600000003000000b4') AS datagram))"
+    ignore_column_names: true
+  - name: "decode_ipfix_protocol"
+    reference_sql: "SELECT protocol FROM netflow.main.ipfix_decode((SELECT from_hex('000a006d6553f100000000070000002a0002002c0100000900080004000c000400070002000b0002000400010001000800020008009800080099000801000031cb007105c633640980e801bb06000000000016e36000000000000004b00000018bcfe568000000018bcfe58f10') AS datagram))"
+    ignore_column_names: true
+  - name: "count_sflow_samples"
+    reference_sql: "SELECT count(*) AS flow_samples FROM netflow.main.sflow_decode((SELECT from_hex('00000005000000010a0000090000000000000001000003e8000000020000000100000048000000640000000000001000000000000000000000000005000000060000000100000003000000200000004000000006c000020ac00002140000c738000000500000001800000000000000020000006c000000c80000000000000001000000010000005800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000') AS datagram)) WHERE dst_port IS NOT NULL"
+    ignore_column_names: true
+  - name: "read_export_header"
+    reference_sql: "SELECT netflow.main.header(from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')::BLOB)['version'] AS version, netflow.main.header(from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')::BLOB)['count'] AS records"
+    ignore_column_names: true
+  - name: "inspect_learned_templates"
+    reference_sql:
+      - "SELECT count(*) FROM netflow.main.ipfix_decode((SELECT from_hex('000a006d6553f100000000070000002a0002002c0100000900080004000c000400070002000b0002000400010001000800020008009800080099000801000031cb007105c633640980e801bb06000000000016e36000000000000004b00000018bcfe568000000018bcfe58f10') AS datagram, 'sim-tmpl-probe' AS exporter))"
+      - "SELECT count(*) AS n FROM netflow.main.templates(exporter => 'sim-tmpl-probe')"
+    ignore_column_names: true
+  - name: "browse_stateful_formats"
+    reference_sql: "SELECT decoder FROM netflow.main.supported_formats WHERE template_stateful ORDER BY decoder"
+    ignore_column_names: true

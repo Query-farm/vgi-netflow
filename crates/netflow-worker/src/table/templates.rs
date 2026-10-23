@@ -224,6 +224,11 @@ struct TemplatesProducer {
 }
 
 impl TableProducer for TemplatesProducer {
+    fn resume_supported(&self) -> bool {
+        // Single batch: the whole template-cache snapshot is emitted at once, so there is no cursor to resume.
+        false
+    }
+
     fn next_batch(&mut self, _out: &mut OutputCollector) -> Result<Option<RecordBatch>> {
         if self.done {
             return Ok(None);

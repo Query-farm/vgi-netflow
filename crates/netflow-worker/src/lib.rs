@@ -120,6 +120,7 @@ fn catalog_metadata(name: &str) -> CatalogModel {
         implementation_version: Some(netflow_core::version().to_string()),
         schemas: vec![CatSchema {
             name: "main".to_string(),
+            path: Vec::new(),
             comment: Some(
                 "NetFlow / IPFIX / sFlow flow-export decode functions and template-cache \
                  introspection."
@@ -338,20 +339,12 @@ fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
             prompt: "I have a one-byte blob that is not a flow datagram. Probe its flow-export \
                      version; it should come back NULL. Return a single column named v."
                 .to_string(),
-            reference_sql: vec!["SELECT netflow.main.flow_version('\\x00'::BLOB) AS v".to_string()],
-            ignore_column_names: false,
-            unordered: false,
         },
         AgentTask {
             name: "validate_garbage",
             prompt: "Classify the garbage two-byte blob 0xDEAD with the validator and return \
                      just the failure kind as a single column named kind."
                 .to_string(),
-            reference_sql: vec![
-                "SELECT netflow.main.well_formed('\\xde\\xad'::BLOB).kind AS kind".to_string(),
-            ],
-            ignore_column_names: false,
-            unordered: false,
         },
         AgentTask {
             name: "count_v5_flows",
@@ -360,12 +353,6 @@ fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
                  Decode it with the unified flow decoder and tell me how many normalized flow \
                  rows it yields. Return one row, one column named flow_count."
             ),
-            reference_sql: vec![format!(
-                "SELECT count(*) AS flow_count \
-                 FROM netflow.main.flows((SELECT from_hex('{SAMPLE_V5_HEX}') AS datagram))"
-            )],
-            ignore_column_names: true,
-            unordered: false,
         },
         AgentTask {
             name: "decode_v9_dst_port",
@@ -375,12 +362,6 @@ fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
                  return the layer-4 destination port of the single decoded flow. One row, one \
                  column named dst_port."
             ),
-            reference_sql: vec![format!(
-                "SELECT dst_port \
-                 FROM netflow.main.netflow_decode((SELECT from_hex('{SAMPLE_V9_HEX}') AS datagram))"
-            )],
-            ignore_column_names: true,
-            unordered: false,
         },
         AgentTask {
             name: "decode_ipfix_protocol",
@@ -388,12 +369,6 @@ fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
                 "Decode this IPFIX (version 10) datagram given as hex: {SAMPLE_IPFIX_HEX}. Return \
                  the IP protocol number of the decoded flow. One row, one column named protocol."
             ),
-            reference_sql: vec![format!(
-                "SELECT protocol \
-                 FROM netflow.main.ipfix_decode((SELECT from_hex('{SAMPLE_IPFIX_HEX}') AS datagram))"
-            )],
-            ignore_column_names: true,
-            unordered: false,
         },
         AgentTask {
             name: "count_sflow_samples",
@@ -403,13 +378,6 @@ fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
                  destination port (counter samples have no ports). One row, one column named \
                  flow_samples."
             ),
-            reference_sql: vec![format!(
-                "SELECT count(*) AS flow_samples \
-                 FROM netflow.main.sflow_decode((SELECT from_hex('{SAMPLE_SFLOW_HEX}') AS datagram)) \
-                 WHERE dst_port IS NOT NULL"
-            )],
-            ignore_column_names: true,
-            unordered: false,
         },
         AgentTask {
             name: "read_export_header",
@@ -419,12 +387,6 @@ fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
                  record count, in that order — one row, a `version` column then a `records` \
                  column."
             ),
-            reference_sql: vec![format!(
-                "SELECT netflow.main.header(from_hex('{SAMPLE_V5_HEX}')::BLOB)['version'] AS version, \
-                 netflow.main.header(from_hex('{SAMPLE_V5_HEX}')::BLOB)['count'] AS records"
-            )],
-            ignore_column_names: true,
-            unordered: false,
         },
         AgentTask {
             name: "inspect_learned_templates",
@@ -435,16 +397,6 @@ fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
                  how many templates it learned. Your final answer is the count — one row, one \
                  column named n."
             ),
-            reference_sql: vec![
-                format!(
-                    "SELECT count(*) FROM netflow.main.ipfix_decode((SELECT \
-                     from_hex('{SAMPLE_IPFIX_HEX}') AS datagram, 'sim-tmpl-probe' AS exporter))"
-                ),
-                "SELECT count(*) AS n FROM netflow.main.templates(exporter => 'sim-tmpl-probe')"
-                    .to_string(),
-            ],
-            ignore_column_names: true,
-            unordered: false,
         },
         AgentTask {
             name: "browse_stateful_formats",
@@ -453,13 +405,6 @@ fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
                      template-stateful (needs a previously-seen template). Return one `decoder` \
                      column, ordered alphabetically."
                 .to_string(),
-            reference_sql: vec![
-                "SELECT decoder FROM netflow.main.supported_formats \
-                 WHERE template_stateful ORDER BY decoder"
-                    .to_string(),
-            ],
-            ignore_column_names: true,
-            unordered: false,
         },
     ]
 }
