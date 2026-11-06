@@ -1362,7 +1362,7 @@ dependencies = [
 
 [[package]]
 name = "netflow-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "proptest",
@@ -1372,7 +1372,7 @@ dependencies = [
 
 [[package]]
 name = "netflow-wasm"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "netflow-worker",
  "vgi",
@@ -1380,7 +1380,7 @@ dependencies = [
 
 [[package]]
 name = "netflow-worker"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "arrow",
  "arrow-array",
