@@ -321,6 +321,7 @@ fn formats_view() -> CatView {
                 "One-line summary of the format's decoding characteristics.".to_string(),
             ),
         ],
+        ..Default::default()
     }
 }
 
