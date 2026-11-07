@@ -23,14 +23,42 @@ observability compute, in-engine, no collector stack.
 > exporter sends about many packets*, not the packets themselves. Carve UDP
 > payloads with a pcap reader upstream; vgi-netflow starts at the UDP payload.
 
-## Install & attach
+## Quick start
+
+Every [GitHub release](https://github.com/Query-farm/vgi-netflow/releases) ships a prebuilt worker binary. The `vgi` extension downloads the one for your platform, checks its SHA-256 and caches it, so there is nothing to install besides DuckDB:
 
 ```sql
 INSTALL vgi FROM community;
 LOAD vgi;
-LOAD inet;   -- src_addr / dst_addr / next_hop are emitted as native INET
-ATTACH 'vgi-netflow' AS netflow (TYPE vgi);   -- spawns the worker binary
+
+ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-netflow@v0.2.0');
+
+-- After decoding, inspect which v9/IPFIX templates the worker learned in this session,
+-- per exporter.
+SELECT exporter, template_id, kind, field_count FROM netflow.main.templates() ORDER BY exporter, template_id;
+
+-- List the template-stateful formats (the ones whose decode needs a learned template)
+-- and which function decodes each.
+SELECT format, version, decoder FROM netflow.main.supported_formats WHERE template_stateful ORDER BY version;
 ```
+
+`src_addr` / `dst_addr` / `next_hop` are emitted as native `INET`, so also run `LOAD inet;` before decoding flows (see [INET addressing](#inet-addressing)).
+
+Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64). `github-auto://` needs an explicit release tag; change `@v0.2.0` to move to a newer release.
+
+### Other ways to run it
+
+- **Docker** (the image bundles the worker; needs a container runtime):
+
+  ```sql
+  ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-netflow:0.2.0');
+  ```
+
+- **Manual download.** Download the archive for your platform from the [releases page](https://github.com/Query-farm/vgi-netflow/releases), verify it against its `.sha256` file (a cosign `.cosign.bundle` is published alongside), unpack it, and set `LOCATION` to the path of the extracted worker executable.
+
+### Build from source
+
+To build the worker yourself, see [Building & testing](#building--testing).
 
 ## SQL surface
 
