@@ -31,7 +31,7 @@ Every [GitHub release](https://github.com/Query-farm/vgi-netflow/releases) ships
 INSTALL vgi FROM community;
 LOAD vgi;
 
-ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-netflow@v0.2.0');
+ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-netflow@v0.3.0');
 
 -- After decoding, inspect which v9/IPFIX templates the worker learned in this session,
 -- per exporter.
@@ -51,7 +51,7 @@ Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64). `github
 - **Docker** (the image bundles the worker; needs a container runtime):
 
   ```sql
-  ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-netflow:0.2.0');
+  ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-netflow:0.3.0');
   ```
 
 - **Manual download.** Download the archive for your platform from the [releases page](https://github.com/Query-farm/vgi-netflow/releases), verify it against its `.sha256` file (a cosign `.cosign.bundle` is published alongside), unpack it, and set `LOCATION` to the path of the extracted worker executable.
