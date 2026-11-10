@@ -44,7 +44,7 @@ SELECT format, version, decoder FROM netflow.main.supported_formats WHERE templa
 
 `src_addr` / `dst_addr` / `next_hop` are emitted as native `INET`, so also run `LOAD inet;` before decoding flows (see [INET addressing](#inet-addressing)).
 
-Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64). `github-auto://` needs an explicit release tag; change `@v0.2.0` to move to a newer release.
+Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64). `github-auto://` needs an explicit release tag; change `@v0.3.0` to move to a newer release.
 
 ### Other ways to run it
 
