@@ -46,7 +46,13 @@ fn catalog_metadata(name: &str) -> CatalogModel {
         tags: vec![
             (
                 "vgi.title".to_string(),
-                "NetFlow / IPFIX / sFlow Flow Decoder".to_string(),
+                "NetFlow Decoder".to_string(),
+            ),
+            (
+                "vgi.subtitle".to_string(),
+                "Turn captured NetFlow v5/v9, IPFIX, and sFlow v5 datagrams into normalized, \
+                 queryable flow rows."
+                    .to_string(),
             ),
             (
                 "vgi.keywords".to_string(),
@@ -127,7 +133,7 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                     .to_string(),
             ),
             tags: vec![
-                ("vgi.title".to_string(), "NetFlow — main".to_string()),
+                ("vgi.title".to_string(), "Flow decoders".to_string()),
                 (
                     "vgi.keywords".to_string(),
                     crate::meta::keywords_json(
