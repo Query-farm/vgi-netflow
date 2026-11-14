@@ -202,3 +202,7 @@ v1/v7/v8; no flow export/encode; no pcap parsing.
 ---
 
 Copyright 2026 Query Farm LLC — https://query.farm
+
+## Executed SQL notebook
+
+[A missing template is not zero traffic](notebooks/README.md) compares complete and template-withheld synthetic NetFlow scans, with diagnostics and unavailable counters kept visible.
