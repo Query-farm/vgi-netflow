@@ -189,31 +189,7 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                      function that handles each.\"}]"
                         .to_string(),
                 ),
-                (
-                    "vgi.example_queries".to_string(),
-                    crate::meta::example_queries_json(&[
-                        (
-                            "Route a mixed column of captured datagrams: label each by its \
-                             flow-export version before decoding.",
-                            "SELECT netflow.main.flow_version(content) AS version, count(*) \
-                             FROM read_blob('caps/*.dat') GROUP BY version",
-                        ),
-                        (
-                            "Decode a capture archive to normalized flow rows and join source \
-                             addresses to a threat-intel prefix list via INET containment.",
-                            "SELECT f.src_addr::INET AS src, f.dst_port, f.bytes \
-                             FROM netflow.main.flows((FROM (SELECT content AS datagram, \
-                             filename AS exporter FROM read_blob('caps/*.dat')))) f \
-                             WHERE f.diagnostics IS NULL AND f.src_addr::INET <<= '10.0.0.0/8'::INET",
-                        ),
-                        (
-                            "After decoding, inspect which v9/IPFIX templates the worker learned \
-                             in this session, per exporter.",
-                            "SELECT exporter, template_id, kind, field_count \
-                             FROM netflow.main.templates() ORDER BY exporter, template_id",
-                        ),
-                    ]),
-                ),
+                ("vgi.example_queries".to_string(), schema_example_queries()),
             ],
             views: vec![formats_view()],
             macros: Vec::new(),
@@ -221,6 +197,36 @@ fn catalog_metadata(name: &str) -> CatalogModel {
         }],
         ..Default::default()
     }
+}
+
+/// The schema-level `vgi.example_queries`: the archive-pattern illustrations
+/// followed by every composed example (shared with the driving objects' lists).
+fn schema_example_queries() -> String {
+    let composed = crate::meta::composed_examples();
+    let mut examples: Vec<(&str, &str)> = vec![
+        (
+            "Route a mixed column of captured datagrams: label each by its \
+             flow-export version before decoding.",
+            "SELECT netflow.main.flow_version(content) AS version, count(*) \
+             FROM read_blob('caps/*.dat') GROUP BY version ORDER BY version",
+        ),
+        (
+            "Decode a capture archive to normalized flow rows and join source \
+             addresses to a threat-intel prefix list via INET containment.",
+            "SELECT f.src_addr::INET AS src, f.dst_port, f.bytes \
+             FROM netflow.main.flows((FROM (SELECT content AS datagram, \
+             filename AS exporter FROM read_blob('caps/*.dat')))) f \
+             WHERE f.diagnostics IS NULL AND f.src_addr::INET <<= '10.0.0.0/8'::INET",
+        ),
+        (
+            "After decoding, inspect which v9/IPFIX templates the worker learned \
+             in this session, per exporter.",
+            "SELECT exporter, template_id, kind, field_count \
+             FROM netflow.main.templates() ORDER BY exporter, template_id",
+        ),
+    ];
+    examples.extend(composed.iter().map(|(d, s)| (*d, s.as_str())));
+    crate::meta::example_queries_json(&examples)
 }
 
 /// A browsable, VALUES-backed reference view: the flow-export formats this worker
@@ -403,6 +409,28 @@ fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
                  inspect the worker's template cache, filtered to that same exporter, and tell me \
                  how many templates it learned. Your final answer is the count — one row, one \
                  column named n."
+            ),
+        },
+        AgentTask {
+            name: "route_by_decoder",
+            prompt: format!(
+                "I have five captured blobs, given as hex: A = {SAMPLE_V5_HEX}, B = \
+                 {SAMPLE_V9_HEX}, C = {SAMPLE_IPFIX_HEX}, D = {SAMPLE_V5_HEX}, E = dead. Using the \
+                 worker's flow-version probe together with its reference table of supported \
+                 formats, work out which decode function should receive each blob, then count \
+                 the blobs per decode function, leaving out any blob that no decoder handles. \
+                 Return a `decoder` column and a `datagrams` count column, ordered by decoder."
+            ),
+        },
+        AgentTask {
+            name: "find_short_capture",
+            prompt: format!(
+                "Two NetFlow v5 captures, given as hex. router-a: {SAMPLE_V5_HEX}. router-b: \
+                 {truncated}. Compare the record count each export header declares with the \
+                 number of clean rows (no diagnostics) the NetFlow decoder actually produces for \
+                 that capture, and tell me which capture lost records. One row, one column named \
+                 exporter.",
+                truncated = crate::meta::sample_v5_truncated_hex()
             ),
         },
         AgentTask {

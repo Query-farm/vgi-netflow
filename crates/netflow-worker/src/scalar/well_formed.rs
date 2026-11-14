@@ -33,6 +33,8 @@ impl ScalarFunction for WellFormed {
     }
 
     fn metadata(&self) -> FunctionMetadata {
+        // Composed example this function drives (shown + executable; offline).
+        let composed = crate::meta::composed_triage_then_decode();
         let mut tags = crate::meta::object_tags(
             "Flow Datagram Validation",
             "Validate the structure of a flow-export datagram (`BLOB`) without a full decode, \
@@ -59,6 +61,7 @@ impl ScalarFunction for WellFormed {
                     "Garbage bytes are flagged not-a-flow-datagram (ok = false).",
                     "SELECT netflow.main.well_formed('\\xde\\xad'::BLOB).kind AS kind",
                 ),
+                (composed.0, composed.1.as_str()),
             ]),
         ));
         // Described illustrative example — byte-identical SQL to the native
@@ -69,10 +72,14 @@ impl ScalarFunction for WellFormed {
         );
         tags.push((
             "vgi.example_queries".into(),
-            crate::meta::example_queries_json(&[(
-                "Triage a captured datagram — STRUCT(ok, version, error, kind) — before decoding.",
-                &example_sql,
-            )]),
+            crate::meta::example_queries_json(&[
+                (
+                    "Triage a captured datagram — STRUCT(ok, version, error, kind) — before \
+                     decoding.",
+                    &example_sql,
+                ),
+                (composed.0, composed.1.as_str()),
+            ]),
         ));
         FunctionMetadata {
             description: "Validate a flow datagram's structure (never panics)".into(),

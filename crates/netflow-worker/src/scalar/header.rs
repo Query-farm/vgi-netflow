@@ -43,6 +43,8 @@ impl ScalarFunction for Header {
     }
 
     fn metadata(&self) -> FunctionMetadata {
+        // Composed example this function drives (shown + executable; offline).
+        let composed = crate::meta::composed_header_reconcile();
         let mut tags = crate::meta::object_tags(
             "Flow Export Header",
             "Decode just the export header of a flow-export datagram (`BLOB`) without decoding any \
@@ -69,6 +71,7 @@ impl ScalarFunction for Header {
                     "The header of a non-flow blob is NULL.",
                     "SELECT netflow.main.header('\\x00'::BLOB) AS hdr",
                 ),
+                (composed.0, composed.1.as_str()),
             ]),
         ));
         // Described illustrative example — byte-identical SQL to the native
@@ -79,10 +82,13 @@ impl ScalarFunction for Header {
         );
         tags.push((
             "vgi.example_queries".into(),
-            crate::meta::example_queries_json(&[(
-                "Read a datagram's export sequence number (for gap / dedup analysis).",
-                &example_sql,
-            )]),
+            crate::meta::example_queries_json(&[
+                (
+                    "Read a datagram's export sequence number (for gap / dedup analysis).",
+                    &example_sql,
+                ),
+                (composed.0, composed.1.as_str()),
+            ]),
         ));
         FunctionMetadata {
             description: "Decode a flow datagram's export header".into(),

@@ -90,11 +90,31 @@ WHERE f.src_addr::INET <<= '10.0.0.0/8'::INET   -- DuckDB inet uses <<= / >>=
   AND t.category IS NOT NULL;
 
 -- 3. Per-version scalars + exporter-specific IEs via the raw_fields MAP.
-SELECT netflow.main.flow_version(content)  AS ver,    -- '5' / '9' / '10' / 'sflow5'
-       netflow.main.header(content).sequence AS seq,
-       f.raw_fields['natEvent']            AS nat_evt  -- enterprise / unmapped IE
-FROM read_blob('caps/*.dat') AS d,
-     netflow.main.flows((FROM (SELECT d.content AS datagram))) AS f;
+--    Decode the relation once and join rows back to their source datagram by
+--    exporter (here the file name) — a correlated flows(d.content) does not bind.
+WITH caps AS (SELECT content AS datagram, filename AS exporter
+              FROM read_blob('caps/*.dat'))
+SELECT c.exporter,
+       netflow.main.flow_version(c.datagram)   AS ver,    -- '5' / '9' / '10' / 'sflow5'
+       netflow.main.header(c.datagram).sequence AS seq,
+       f.raw_fields['natEvent']                AS nat_evt  -- enterprise / unmapped IE
+FROM caps AS c
+JOIN netflow.main.flows((FROM caps)) AS f ON f.exporter = c.exporter
+ORDER BY c.exporter, seq;
+
+-- 4. Loss check: does each NetFlow v5 capture decode as many clean records as
+--    its export header declares? (header() + netflow_decode() together.)
+WITH caps AS (SELECT content AS datagram, filename AS exporter
+              FROM read_blob('caps/v5/*.dat'))
+SELECT c.exporter,
+       netflow.main.header(c.datagram).count AS declared_records,
+       coalesce(d.clean_rows, 0)            AS clean_rows
+FROM caps AS c
+LEFT JOIN (SELECT exporter, count(*) FILTER (WHERE diagnostics IS NULL) AS clean_rows
+           FROM netflow.main.netflow_decode((FROM caps))
+           GROUP BY exporter) AS d ON d.exporter = c.exporter
+WHERE coalesce(d.clean_rows, 0) < netflow.main.header(c.datagram).count
+ORDER BY c.exporter;
 ```
 
 ### Template priming (critical)

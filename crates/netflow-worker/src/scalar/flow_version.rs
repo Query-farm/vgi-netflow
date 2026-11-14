@@ -21,6 +21,8 @@ impl ScalarFunction for FlowVersion {
     }
 
     fn metadata(&self) -> FunctionMetadata {
+        // Composed example this function drives (shown + executable; offline).
+        let composed = crate::meta::composed_route_by_decoder();
         let mut tags = crate::meta::object_tags(
             "Flow Datagram Version Probe",
             "Probe the leading bytes of a captured flow-export datagram (`BLOB`) and return its wire \
@@ -47,6 +49,7 @@ impl ScalarFunction for FlowVersion {
                     "A one-byte non-flow blob matches no known header — returns NULL.",
                     "SELECT netflow.main.flow_version('\\x00'::BLOB) AS version",
                 ),
+                (composed.0, composed.1.as_str()),
             ]),
         ));
         // Described illustrative example — byte-identical SQL to the native
@@ -58,10 +61,13 @@ impl ScalarFunction for FlowVersion {
         );
         tags.push((
             "vgi.example_queries".into(),
-            crate::meta::example_queries_json(&[(
-                "Detect a datagram's flow-export version before routing it to a decoder.",
-                &example_sql,
-            )]),
+            crate::meta::example_queries_json(&[
+                (
+                    "Detect a datagram's flow-export version before routing it to a decoder.",
+                    &example_sql,
+                ),
+                (composed.0, composed.1.as_str()),
+            ]),
         ));
         FunctionMetadata {
             description: "Probe a flow-export datagram's wire version".into(),

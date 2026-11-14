@@ -141,3 +141,100 @@ pub fn object_tags(
         ("vgi.keywords".to_string(), keywords_json(keywords)),
     ]
 }
+
+/// `SAMPLE_V5_HEX` cut short mid-record: the header still declares two records
+/// but only part of the first survives, so `well_formed` reports `short-record`
+/// and the decoder emits a single `truncated` diagnostic row.
+pub fn sample_v5_truncated_hex() -> &'static str {
+    &SAMPLE_V5_HEX[..120]
+}
+
+/// Composed examples: each combines two or more of the worker's own objects in
+/// one realistic, offline, deterministic query over the inline sample datagrams.
+/// Each is defined once here and referenced from the schema-level
+/// `vgi.example_queries`, the driving object's example list, and its
+/// `vgi.executable_examples` (they are pinned by `test/sql/composed.test`).
+///
+/// `flows` + `supported_formats`: decode a mixed batch, roll up per format.
+pub fn composed_format_rollup() -> (&'static str, String) {
+    (
+        "Decode a mixed batch of NetFlow v5, NetFlow v9, IPFIX and sFlow datagrams with flows(), \
+         then join each decoded row's flow_version to the supported_formats reference table to \
+         count decoded rows and bytes per format and defining spec (sFlow counter samples count \
+         as rows but carry no bytes).",
+        format!(
+            "SELECT s.format, s.rfc, count(*) AS decoded_rows, sum(f.bytes) AS total_bytes \
+             FROM netflow.main.flows((SELECT from_hex(h) AS datagram FROM (VALUES \
+             ('{SAMPLE_V5_HEX}'), ('{SAMPLE_V9_HEX}'), ('{SAMPLE_IPFIX_HEX}'), \
+             ('{SAMPLE_SFLOW_HEX}')) AS t(h))) AS f \
+             JOIN netflow.main.supported_formats AS s ON s.flow_version = f.flow_version \
+             GROUP BY s.format, s.rfc ORDER BY s.format, s.rfc"
+        ),
+    )
+}
+
+/// `flow_version` + `supported_formats`: route each captured datagram to the
+/// decode function that handles it (unrecognized bytes get no decoder).
+pub fn composed_route_by_decoder() -> (&'static str, String) {
+    (
+        "Route a mixed set of captured datagrams: probe each one's wire version with \
+         flow_version() and look it up in supported_formats to find the decode function that \
+         handles it — the unrecognized junk blob gets a NULL version and no decoder.",
+        format!(
+            "SELECT c.capture, netflow.main.flow_version(c.datagram) AS version, s.format, \
+             s.decoder FROM (VALUES ('router-a', from_hex('{SAMPLE_V5_HEX}')), \
+             ('router-b', from_hex('{SAMPLE_IPFIX_HEX}')), \
+             ('switch-c', from_hex('{SAMPLE_SFLOW_HEX}')), ('junk', '\\xde\\xad'::BLOB)) \
+             AS c(capture, datagram) LEFT JOIN netflow.main.supported_formats AS s \
+             ON s.flow_version = netflow.main.flow_version(c.datagram) ORDER BY c.capture"
+        ),
+    )
+}
+
+/// `well_formed` + `flows`: triage a capture, decode only the clean datagrams.
+pub fn composed_triage_then_decode() -> (&'static str, String) {
+    let truncated = sample_v5_truncated_hex();
+    (
+        "Triage before decoding: keep only the captures that well_formed() validates (the \
+         truncated router-t datagram fails as short-record), decode those with flows(), and \
+         total the clean flows and bytes per capture.",
+        format!(
+            "SELECT f.exporter, count(*) AS flows, sum(f.bytes) AS total_bytes \
+             FROM netflow.main.flows((SELECT c.datagram, c.capture AS exporter FROM (VALUES \
+             ('router-a', from_hex('{SAMPLE_V5_HEX}')), ('router-t', from_hex('{truncated}')), \
+             ('router-9', from_hex('{SAMPLE_V9_HEX}'))) AS c(capture, datagram) \
+             WHERE netflow.main.well_formed(c.datagram).ok)) AS f \
+             GROUP BY f.exporter ORDER BY f.exporter"
+        ),
+    )
+}
+
+/// `header` + `netflow_decode`: reconcile the record count each NetFlow v5
+/// header declares against the clean rows actually decoded (loss detection).
+pub fn composed_header_reconcile() -> (&'static str, String) {
+    let truncated = sample_v5_truncated_hex();
+    (
+        "Reconcile NetFlow v5 captures: compare the record count each export header declares \
+         (header().count) with the clean rows netflow_decode() actually produced for that \
+         capture — the truncated router-b datagram declares 2 records but decodes 0 clean ones.",
+        format!(
+            "WITH caps AS (SELECT exporter, datagram FROM (VALUES ('router-a', from_hex('{SAMPLE_V5_HEX}')), \
+             ('router-b', from_hex('{truncated}'))) AS t(exporter, datagram)) \
+             SELECT c.exporter, netflow.main.header(c.datagram).count AS declared_records, \
+             coalesce(d.clean_rows, 0) AS clean_rows FROM caps AS c LEFT JOIN \
+             (SELECT exporter, count(*) FILTER (WHERE diagnostics IS NULL) AS clean_rows \
+             FROM netflow.main.netflow_decode((SELECT datagram, exporter FROM caps)) \
+             GROUP BY exporter) AS d ON d.exporter = c.exporter ORDER BY c.exporter"
+        ),
+    )
+}
+
+/// Every composed example, in the order the schema-level list shows them.
+pub fn composed_examples() -> Vec<(&'static str, String)> {
+    vec![
+        composed_format_rollup(),
+        composed_route_by_decoder(),
+        composed_triage_then_decode(),
+        composed_header_reconcile(),
+    ]
+}

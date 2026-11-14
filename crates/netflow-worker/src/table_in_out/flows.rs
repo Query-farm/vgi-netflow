@@ -276,18 +276,25 @@ fn tags_for(name: &str) -> Vec<(String, String)> {
         "vgi.result_columns_schema".into(),
         crate::meta::result_columns_schema_json(&flow_result_columns()),
     ));
+    // `flows` drives the composed per-format rollup (flows + supported_formats);
+    // it is offline + deterministic, so it is executable as well as shown.
+    let composed = (name == "flows").then(crate::meta::composed_format_rollup);
     let (ex_desc, ex_sql) = executable_example(name);
+    let mut executable = vec![(ex_desc, ex_sql.as_str())];
+    executable.extend(composed.iter().map(|(d, s)| (*d, s.as_str())));
     tags.push((
         "vgi.executable_examples".into(),
-        crate::meta::executable_examples_json(&[(ex_desc, ex_sql.as_str())]),
+        crate::meta::executable_examples_json(&executable),
     ));
     // Described illustrative example — byte-identical SQL to the native
     // `Meta.example` (`doc_example`), so the merged example set (native carrier +
     // this tag) carries a human-readable description (VGI515).
     let doc_ex = doc_example(name);
+    let mut shown = vec![(doc_ex.description.as_str(), doc_ex.sql.as_str())];
+    shown.extend(composed.iter().map(|(d, s)| (*d, s.as_str())));
     tags.push((
         "vgi.example_queries".into(),
-        crate::meta::example_queries_json(&[(doc_ex.description.as_str(), doc_ex.sql.as_str())]),
+        crate::meta::example_queries_json(&shown),
     ));
     tags
 }
