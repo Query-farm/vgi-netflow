@@ -1,0 +1,327 @@
+{
+  "query": "SELECT * FROM duckdb_functions() WHERE database_name='netflow' ORDER BY schema_name,function_name,parameter_types",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "schema_name",
+    "function_name",
+    "alias_of",
+    "function_type",
+    "description",
+    "comment",
+    "tags",
+    "return_type",
+    "parameters",
+    "parameter_types",
+    "varargs",
+    "macro_definition",
+    "has_side_effects",
+    "internal",
+    "extension_name",
+    "function_oid",
+    "examples",
+    "stability",
+    "categories"
+  ],
+  "rows": [
+    [
+      "netflow",
+      "22612",
+      "main",
+      "flow_version",
+      null,
+      "scalar",
+      "Probe a flow-export datagram's wire version",
+      null,
+      {
+        "vgi.category": "probe",
+        "vgi.doc_llm": "Probe the leading bytes of a captured flow-export datagram (`BLOB`) and return its wire version: '5' (NetFlow v5), '9' (NetFlow v9), '10' (IPFIX), or 'sflow5' (sFlow v5); NULL when the bytes match no known flow header. Cheap \u2014 it reads only the header and allocates no record tree. Use it to route or filter a mixed column of datagrams before calling the decoders.",
+        "vgi.doc_md": "Return the flow-export version of a datagram `BLOB`: '5' / '9' / '10' / 'sflow5', or NULL if unrecognized. Header-only, no full decode.",
+        "vgi.example_queries": "[{\"description\":\"Detect a datagram's flow-export version before routing it to a decoder.\",\"sql\":\"SELECT netflow.main.flow_version(from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')::BLOB) AS flow_version\"},{\"description\":\"Route a mixed set of captured datagrams: probe each one's wire version with flow_version() and look it up in supported_formats to find the decode function that handles it \u2014 the unrecognized junk blob gets a NULL version and no decoder.\",\"sql\":\"SELECT c.capture, netflow.main.flow_version(c.datagram) AS version, s.format, s.decoder FROM (VALUES ('router-a', from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')), ('router-b', from_hex('000a006d6553f100000000070000002a0002002c0100000900080004000c000400070002000b0002000400010001000800020008009800080099000801000031cb007105c633640980e801bb06000000000016e36000000000000004b00000018bcfe568000000018bcfe58f10')), ('switch-c', from_hex('00000005000000010a0000090000000000000001000003e8000000020000000100000048000000640000000000001000000000000000000000000005000000060000000100000003000000200000004000000006c000020ac00002140000c738000000500000001800000000000000020000006c000000c80000000000000001000000010000005800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')), ('junk', '\\\\xde\\\\xad'::BLOB)) AS c(capture, datagram) LEFT JOIN netflow.main.supported_formats AS s ON s.flow_version = netflow.main.flow_version(c.datagram) ORDER BY c.capture\"}]",
+        "vgi.executable_examples": "[{\"description\":\"Probe a real NetFlow v5 datagram \u2014 returns '5'.\",\"sql\":\"SELECT netflow.main.flow_version(from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')::BLOB) AS version\"},{\"description\":\"A one-byte non-flow blob matches no known header \u2014 returns NULL.\",\"sql\":\"SELECT netflow.main.flow_version('\\\\x00'::BLOB) AS version\"},{\"description\":\"Route a mixed set of captured datagrams: probe each one's wire version with flow_version() and look it up in supported_formats to find the decode function that handles it \u2014 the unrecognized junk blob gets a NULL version and no decoder.\",\"sql\":\"SELECT c.capture, netflow.main.flow_version(c.datagram) AS version, s.format, s.decoder FROM (VALUES ('router-a', from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')), ('router-b', from_hex('000a006d6553f100000000070000002a0002002c0100000900080004000c000400070002000b0002000400010001000800020008009800080099000801000031cb007105c633640980e801bb06000000000016e36000000000000004b00000018bcfe568000000018bcfe58f10')), ('switch-c', from_hex('00000005000000010a0000090000000000000001000003e8000000020000000100000048000000640000000000001000000000000000000000000005000000060000000100000003000000200000004000000006c000020ac00002140000c738000000500000001800000000000000020000006c000000c80000000000000001000000010000005800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')), ('junk', '\\\\xde\\\\xad'::BLOB)) AS c(capture, datagram) LEFT JOIN netflow.main.supported_formats AS s ON s.flow_version = netflow.main.flow_version(c.datagram) ORDER BY c.capture\"}]",
+        "vgi.keywords": "[\"flow version\",\"netflow version\",\"ipfix\",\"sflow\",\"probe\",\"detect\",\"version\",\"datagram\",\"header\"]",
+        "vgi.title": "Flow Datagram Version Probe"
+      },
+      "VARCHAR",
+      [
+        "datagram"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22616,
+      [
+        "SELECT netflow.main.flow_version(from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')::BLOB) AS flow_version"
+      ],
+      "CONSISTENT",
+      []
+    ],
+    [
+      "netflow",
+      "22612",
+      "main",
+      "flows",
+      null,
+      "table",
+      "Decode captured flow-export datagrams (NetFlow v5/v9, IPFIX, sFlow v5) to normalized flow rows",
+      null,
+      {
+        "vgi.category": "decode",
+        "vgi.doc_llm": "Auto-detect the version of each captured flow-export datagram (NetFlow v5/v9, IPFIX, sFlow v5) and decode it to one normalized wide flow row per record: src/dst as INET, ports, protocol, byte/packet counts, TCP flags, resolved flow start/end timestamps, AS numbers, interfaces, next hop, ToS, sampling, plus a raw_fields `MAP` of every unmapped Information Element. Threads a per-exporter, per-observation-domain template cache across rows and scan batches so v9/IPFIX data decodes against templates seen in earlier datagrams. Pass a relation carrying a `datagram` column of captured bytes (and optionally an `exporter` column so template ids do not collide across devices); the runnable example shows the exact call shape. Feed datagrams in capture order.",
+        "vgi.doc_md": "Decode any flow-export datagram to normalized flow rows (the wide schema). Pass a relation with a `datagram` `BLOB` column (and optional `exporter` / `obs_domain` / `mode`). Auto-detects v5/v9/IPFIX/sFlow and threads the template cache.",
+        "vgi.example_queries": "[{\"description\":\"Decode a datagram with a per-row exporter id (cache scope) and aggregate the decoded flows by exporter.\",\"sql\":\"SELECT exporter, count(*) AS flows, sum(bytes) AS total_bytes FROM netflow.main.flows((SELECT from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000') AS datagram, 'router-1' AS exporter)) GROUP BY exporter\"},{\"description\":\"Decode a mixed batch of NetFlow v5, NetFlow v9, IPFIX and sFlow datagrams with flows(), then join each decoded row's flow_version to the supported_formats reference table to count decoded rows and bytes per format and defining spec (sFlow counter samples count as rows but carry no bytes).\",\"sql\":\"SELECT s.format, s.rfc, count(*) AS decoded_rows, sum(f.bytes) AS total_bytes FROM netflow.main.flows((SELECT from_hex(h) AS datagram FROM (VALUES ('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000'), ('00090002000186a06553f1000000001400000001000000240100000700080004000c000400070002000b000200040001000200040001000401000019ac100001ac100002045700160600000003000000b4'), ('000a006d6553f100000000070000002a0002002c0100000900080004000c000400070002000b0002000400010001000800020008009800080099000801000031cb007105c633640980e801bb06000000000016e36000000000000004b00000018bcfe568000000018bcfe58f10'), ('00000005000000010a0000090000000000000001000003e8000000020000000100000048000000640000000000001000000000000000000000000005000000060000000100000003000000200000004000000006c000020ac00002140000c738000000500000001800000000000000020000006c000000c80000000000000001000000010000005800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')) AS t(h))) AS f JOIN netflow.main.supported_formats AS s ON s.flow_version = f.flow_version GROUP BY s.format, s.rfc ORDER BY s.format, s.rfc\"}]",
+        "vgi.executable_examples": "[{\"description\":\"Auto-detect and decode a captured NetFlow v5 datagram (two records) to normalized flow rows.\",\"sql\":\"SELECT flow_version, dst_port, protocol, bytes, packets FROM netflow.main.flows((SELECT from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000') AS datagram)) ORDER BY dst_port\"},{\"description\":\"Decode a mixed batch of NetFlow v5, NetFlow v9, IPFIX and sFlow datagrams with flows(), then join each decoded row's flow_version to the supported_formats reference table to count decoded rows and bytes per format and defining spec (sFlow counter samples count as rows but carry no bytes).\",\"sql\":\"SELECT s.format, s.rfc, count(*) AS decoded_rows, sum(f.bytes) AS total_bytes FROM netflow.main.flows((SELECT from_hex(h) AS datagram FROM (VALUES ('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000'), ('00090002000186a06553f1000000001400000001000000240100000700080004000c000400070002000b000200040001000200040001000401000019ac100001ac100002045700160600000003000000b4'), ('000a006d6553f100000000070000002a0002002c0100000900080004000c000400070002000b0002000400010001000800020008009800080099000801000031cb007105c633640980e801bb06000000000016e36000000000000004b00000018bcfe568000000018bcfe58f10'), ('00000005000000010a0000090000000000000001000003e8000000020000000100000048000000640000000000001000000000000000000000000005000000060000000100000003000000200000004000000006c000020ac00002140000c738000000500000001800000000000000020000006c000000c80000000000000001000000010000005800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000')) AS t(h))) AS f JOIN netflow.main.supported_formats AS s ON s.flow_version = f.flow_version GROUP BY s.format, s.rfc ORDER BY s.format, s.rfc\"}]",
+        "vgi.keywords": "[\"netflow\",\"ipfix\",\"sflow\",\"flow\",\"flows\",\"decode\",\"network\",\"security\",\"observability\",\"template\",\"datagram\",\"normalize\",\"relation\",\"lateral\"]",
+        "vgi.result_columns_schema": "[{\"name\":\"exporter\",\"type\":\"VARCHAR\",\"description\":\"Cache key / source device (as supplied via the exporter column or derived).\"},{\"name\":\"flow_version\",\"type\":\"VARCHAR\",\"description\":\"Wire format of the source datagram: '5', '9', '10' (IPFIX), or 'sflow5'.\"},{\"name\":\"obs_domain\",\"type\":\"UINTEGER\",\"description\":\"v9 source-id / IPFIX observation domain (the template-id namespace).\"},{\"name\":\"template_id\",\"type\":\"USMALLINT\",\"description\":\"v9/IPFIX template id the record decoded against; NULL for v5 / sFlow.\"},{\"name\":\"export_time\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"Datagram export time taken from the export header.\"},{\"name\":\"sequence\",\"type\":\"UBIGINT\",\"description\":\"Export sequence number (used for gap / loss detection).\"},{\"name\":\"src_addr\",\"type\":\"STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)\",\"description\":\"Source IP; cast ::INET for `<<=` containment joins.\"},{\"name\":\"dst_addr\",\"type\":\"STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)\",\"description\":\"Destination IP; cast ::INET for `<<=` containment joins.\"},{\"name\":\"src_port\",\"type\":\"USMALLINT\",\"description\":\"Layer-4 source port.\"},{\"name\":\"dst_port\",\"type\":\"USMALLINT\",\"description\":\"Layer-4 destination port.\"},{\"name\":\"protocol\",\"type\":\"UTINYINT\",\"description\":\"IP protocol number (6 = TCP, 17 = UDP, ...).\"},{\"name\":\"tcp_flags\",\"type\":\"UTINYINT\",\"description\":\"Cumulative TCP control flags observed for the flow.\"},{\"name\":\"bytes\",\"type\":\"UBIGINT\",\"description\":\"Octet count (for sFlow, scaled by the sampling rate).\"},{\"name\":\"packets\",\"type\":\"UBIGINT\",\"description\":\"Packet count (for sFlow, the sampling rate).\"},{\"name\":\"flow_start\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"Flow start time, resolved to an absolute timestamp.\"},{\"name\":\"flow_end\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"Flow end time, resolved to an absolute timestamp.\"},{\"name\":\"src_as\",\"type\":\"UINTEGER\",\"description\":\"Origin autonomous-system number (when the exporter reports it).\"},{\"name\":\"dst_as\",\"type\":\"UINTEGER\",\"description\":\"Peer autonomous-system number (when the exporter reports it).\"},{\"name\":\"input_snmp\",\"type\":\"UINTEGER\",\"description\":\"Ingress interface ifIndex.\"},{\"name\":\"output_snmp\",\"type\":\"UINTEGER\",\"description\":\"Egress interface ifIndex.\"},{\"name\":\"next_hop\",\"type\":\"STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)\",\"description\":\"BGP / IP next hop; cast ::INET to use it.\"},{\"name\":\"tos\",\"type\":\"UTINYINT\",\"description\":\"IP type-of-service / DSCP byte.\"},{\"name\":\"src_mask\",\"type\":\"UTINYINT\",\"description\":\"Source prefix length in bits (v5 / v9).\"},{\"name\":\"dst_mask\",\"type\":\"UTINYINT\",\"description\":\"Destination prefix length in bits (v5 / v9).\"},{\"name\":\"sampling_rate\",\"type\":\"UINTEGER\",\"description\":\"sFlow sampling N / IPFIX samplingInterval; NULL when none.\"},{\"name\":\"direction\",\"type\":\"UTINYINT\",\"description\":\"flowDirection (0 = ingress, 1 = egress) when present.\"},{\"name\":\"raw_fields\",\"type\":\"MAP(VARCHAR, BLOB)\",\"description\":\"Every Information Element not mapped to a named column, keyed by IE name -> raw bytes.\"},{\"name\":\"diagnostics\",\"type\":\"VARCHAR\",\"description\":\"NULL on a clean decode; else missing-template / truncated / decode-error / ...\"}]",
+        "vgi.title": "Unified Flow Decode (relation in)"
+      },
+      null,
+      [
+        "relation"
+      ],
+      [
+        "TABLE"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22619,
+      [
+        "SELECT exporter, count(*) AS flows, sum(bytes) AS total_bytes FROM netflow.main.flows((SELECT from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000') AS datagram, 'router-1' AS exporter)) GROUP BY exporter"
+      ],
+      null,
+      []
+    ],
+    [
+      "netflow",
+      "22612",
+      "main",
+      "header",
+      null,
+      "scalar",
+      "Decode a flow datagram's export header",
+      null,
+      {
+        "vgi.category": "probe",
+        "vgi.doc_llm": "Decode just the export header of a flow-export datagram (`BLOB`) without decoding any records: version, record count, sysUptime, export_time (`TIMESTAMPTZ`), sequence number, and observation domain. Use it for sequence-gap analysis and dedup over a large column of datagrams cheaply. sFlow fields map best-effort (no count/sys_uptime). Returns a `STRUCT`; NULL on a non-flow datagram.",
+        "vgi.doc_md": "Decode a flow datagram's export header to a `STRUCT(version, count, sys_uptime, export_time, sequence, obs_domain)`. NULL if not a flow datagram.",
+        "vgi.example_queries": "[{\"description\":\"Read a datagram's export sequence number (for gap / dedup analysis).\",\"sql\":\"SELECT netflow.main.header(from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')::BLOB).sequence AS sequence\"},{\"description\":\"Reconcile NetFlow v5 captures: compare the record count each export header declares (header().count) with the clean rows netflow_decode() actually produced for that capture \u2014 the truncated router-b datagram declares 2 records but decodes 0 clean ones.\",\"sql\":\"WITH caps AS (SELECT exporter, datagram FROM (VALUES ('router-a', from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')), ('router-b', from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d20050'))) AS t(exporter, datagram)) SELECT c.exporter, netflow.main.header(c.datagram).count AS declared_records, coalesce(d.clean_rows, 0) AS clean_rows FROM caps AS c LEFT JOIN (SELECT exporter, count(*) FILTER (WHERE diagnostics IS NULL) AS clean_rows FROM netflow.main.netflow_decode((SELECT datagram, exporter FROM caps)) GROUP BY exporter) AS d ON d.exporter = c.exporter ORDER BY c.exporter\"}]",
+        "vgi.executable_examples": "[{\"description\":\"Decode the export header of a real NetFlow v5 datagram (version 5, 2 records).\",\"sql\":\"SELECT netflow.main.header(from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')::BLOB) AS hdr\"},{\"description\":\"The header of a non-flow blob is NULL.\",\"sql\":\"SELECT netflow.main.header('\\\\x00'::BLOB) AS hdr\"},{\"description\":\"Reconcile NetFlow v5 captures: compare the record count each export header declares (header().count) with the clean rows netflow_decode() actually produced for that capture \u2014 the truncated router-b datagram declares 2 records but decodes 0 clean ones.\",\"sql\":\"WITH caps AS (SELECT exporter, datagram FROM (VALUES ('router-a', from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')), ('router-b', from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d20050'))) AS t(exporter, datagram)) SELECT c.exporter, netflow.main.header(c.datagram).count AS declared_records, coalesce(d.clean_rows, 0) AS clean_rows FROM caps AS c LEFT JOIN (SELECT exporter, count(*) FILTER (WHERE diagnostics IS NULL) AS clean_rows FROM netflow.main.netflow_decode((SELECT datagram, exporter FROM caps)) GROUP BY exporter) AS d ON d.exporter = c.exporter ORDER BY c.exporter\"}]",
+        "vgi.keywords": "[\"header\",\"export header\",\"sequence\",\"gap detection\",\"dedup\",\"version\",\"obs_domain\",\"netflow\",\"ipfix\",\"sflow\"]",
+        "vgi.title": "Flow Export Header"
+      },
+      "STRUCT(\"version\" USMALLINT, count USMALLINT, sys_uptime UINTEGER, export_time TIMESTAMP WITH TIME ZONE, \"sequence\" UBIGINT, obs_domain UINTEGER)",
+      [
+        "datagram"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22617,
+      [
+        "SELECT netflow.main.header(from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')::BLOB).sequence AS sequence"
+      ],
+      "CONSISTENT",
+      []
+    ],
+    [
+      "netflow",
+      "22612",
+      "main",
+      "ipfix_decode",
+      null,
+      "table",
+      "Decode IPFIX (v10) datagrams to normalized flow rows",
+      null,
+      {
+        "vgi.category": "decode",
+        "vgi.doc_llm": "Decode IPFIX (RFC 7011, version 10) datagrams from a relation's `datagram` `BLOB` column to the normalized flow schema with full template, options-template, enterprise-IE (private enterprise number) and variable-length IE handling. The headline template-stateful decoder. A non-IPFIX datagram yields a decode-error diagnostic.",
+        "vgi.doc_md": "Decode IPFIX (v10) datagrams from a relation's `datagram` column \u2014 templates, enterprise + variable-length IEs.",
+        "vgi.example_queries": "[{\"description\":\"Decode an IPFIX datagram and read the mapped 5-tuple plus byte/packet counters.\",\"sql\":\"SELECT flow_version, src_port, dst_port, bytes, packets FROM netflow.main.ipfix_decode((SELECT from_hex('000a006d6553f100000000070000002a0002002c0100000900080004000c000400070002000b0002000400010001000800020008009800080099000801000031cb007105c633640980e801bb06000000000016e36000000000000004b00000018bcfe568000000018bcfe58f10') AS datagram))\"}]",
+        "vgi.executable_examples": "[{\"description\":\"Decode an IPFIX (v10) datagram: a Template Set plus one fully-decodable IPv4/TCP flow.\",\"sql\":\"SELECT flow_version, dst_port, protocol, bytes, packets FROM netflow.main.ipfix_decode((SELECT from_hex('000a006d6553f100000000070000002a0002002c0100000900080004000c000400070002000b0002000400010001000800020008009800080099000801000031cb007105c633640980e801bb06000000000016e36000000000000004b00000018bcfe568000000018bcfe58f10') AS datagram))\"}]",
+        "vgi.keywords": "[\"ipfix\",\"rfc7011\",\"decode\",\"flow\",\"template\",\"enterprise\",\"variable-length\",\"network\",\"relation\"]",
+        "vgi.result_columns_schema": "[{\"name\":\"exporter\",\"type\":\"VARCHAR\",\"description\":\"Cache key / source device (as supplied via the exporter column or derived).\"},{\"name\":\"flow_version\",\"type\":\"VARCHAR\",\"description\":\"Wire format of the source datagram: '5', '9', '10' (IPFIX), or 'sflow5'.\"},{\"name\":\"obs_domain\",\"type\":\"UINTEGER\",\"description\":\"v9 source-id / IPFIX observation domain (the template-id namespace).\"},{\"name\":\"template_id\",\"type\":\"USMALLINT\",\"description\":\"v9/IPFIX template id the record decoded against; NULL for v5 / sFlow.\"},{\"name\":\"export_time\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"Datagram export time taken from the export header.\"},{\"name\":\"sequence\",\"type\":\"UBIGINT\",\"description\":\"Export sequence number (used for gap / loss detection).\"},{\"name\":\"src_addr\",\"type\":\"STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)\",\"description\":\"Source IP; cast ::INET for `<<=` containment joins.\"},{\"name\":\"dst_addr\",\"type\":\"STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)\",\"description\":\"Destination IP; cast ::INET for `<<=` containment joins.\"},{\"name\":\"src_port\",\"type\":\"USMALLINT\",\"description\":\"Layer-4 source port.\"},{\"name\":\"dst_port\",\"type\":\"USMALLINT\",\"description\":\"Layer-4 destination port.\"},{\"name\":\"protocol\",\"type\":\"UTINYINT\",\"description\":\"IP protocol number (6 = TCP, 17 = UDP, ...).\"},{\"name\":\"tcp_flags\",\"type\":\"UTINYINT\",\"description\":\"Cumulative TCP control flags observed for the flow.\"},{\"name\":\"bytes\",\"type\":\"UBIGINT\",\"description\":\"Octet count (for sFlow, scaled by the sampling rate).\"},{\"name\":\"packets\",\"type\":\"UBIGINT\",\"description\":\"Packet count (for sFlow, the sampling rate).\"},{\"name\":\"flow_start\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"Flow start time, resolved to an absolute timestamp.\"},{\"name\":\"flow_end\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"Flow end time, resolved to an absolute timestamp.\"},{\"name\":\"src_as\",\"type\":\"UINTEGER\",\"description\":\"Origin autonomous-system number (when the exporter reports it).\"},{\"name\":\"dst_as\",\"type\":\"UINTEGER\",\"description\":\"Peer autonomous-system number (when the exporter reports it).\"},{\"name\":\"input_snmp\",\"type\":\"UINTEGER\",\"description\":\"Ingress interface ifIndex.\"},{\"name\":\"output_snmp\",\"type\":\"UINTEGER\",\"description\":\"Egress interface ifIndex.\"},{\"name\":\"next_hop\",\"type\":\"STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)\",\"description\":\"BGP / IP next hop; cast ::INET to use it.\"},{\"name\":\"tos\",\"type\":\"UTINYINT\",\"description\":\"IP type-of-service / DSCP byte.\"},{\"name\":\"src_mask\",\"type\":\"UTINYINT\",\"description\":\"Source prefix length in bits (v5 / v9).\"},{\"name\":\"dst_mask\",\"type\":\"UTINYINT\",\"description\":\"Destination prefix length in bits (v5 / v9).\"},{\"name\":\"sampling_rate\",\"type\":\"UINTEGER\",\"description\":\"sFlow sampling N / IPFIX samplingInterval; NULL when none.\"},{\"name\":\"direction\",\"type\":\"UTINYINT\",\"description\":\"flowDirection (0 = ingress, 1 = egress) when present.\"},{\"name\":\"raw_fields\",\"type\":\"MAP(VARCHAR, BLOB)\",\"description\":\"Every Information Element not mapped to a named column, keyed by IE name -> raw bytes.\"},{\"name\":\"diagnostics\",\"type\":\"VARCHAR\",\"description\":\"NULL on a clean decode; else missing-template / truncated / decode-error / ...\"}]",
+        "vgi.title": "IPFIX Decode (relation in)"
+      },
+      null,
+      [
+        "relation"
+      ],
+      [
+        "TABLE"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22620,
+      [
+        "SELECT flow_version, src_port, dst_port, bytes, packets FROM netflow.main.ipfix_decode((SELECT from_hex('000a006d6553f100000000070000002a0002002c0100000900080004000c000400070002000b0002000400010001000800020008009800080099000801000031cb007105c633640980e801bb06000000000016e36000000000000004b00000018bcfe568000000018bcfe58f10') AS datagram))"
+      ],
+      null,
+      []
+    ],
+    [
+      "netflow",
+      "22612",
+      "main",
+      "netflow_decode",
+      null,
+      "table",
+      "Decode NetFlow v5 / v9 datagrams to normalized flow rows",
+      null,
+      {
+        "vgi.category": "decode",
+        "vgi.doc_llm": "Decode NetFlow v5 (fixed) and NetFlow v9 (RFC 3954, template-based) datagrams from a relation's `datagram` `BLOB` column to the normalized flow schema. v9 threads the template cache; an IPFIX or sFlow datagram yields a decode-error diagnostic. Pass an optional `exporter` column for per-device cache scoping.",
+        "vgi.doc_md": "Decode NetFlow v5/v9 datagrams from a relation's `datagram` column to normalized flow rows. v9 is template-stateful.",
+        "vgi.example_queries": "[{\"description\":\"Decode a NetFlow v9 datagram, scoping the template cache to exporter 'router-1' so template ids never collide across devices.\",\"sql\":\"SELECT exporter, flow_version, src_port, dst_port, packets FROM netflow.main.netflow_decode((SELECT from_hex('00090002000186a06553f1000000001400000001000000240100000700080004000c000400070002000b000200040001000200040001000401000019ac100001ac100002045700160600000003000000b4') AS datagram, 'router-1' AS exporter))\"}]",
+        "vgi.executable_examples": "[{\"description\":\"Decode a NetFlow v9 datagram that carries its template and one data record.\",\"sql\":\"SELECT flow_version, dst_port, protocol, packets FROM netflow.main.netflow_decode((SELECT from_hex('00090002000186a06553f1000000001400000001000000240100000700080004000c000400070002000b000200040001000200040001000401000019ac100001ac100002045700160600000003000000b4') AS datagram))\"}]",
+        "vgi.keywords": "[\"netflow\",\"v5\",\"v9\",\"rfc3954\",\"decode\",\"flow\",\"template\",\"network\",\"relation\"]",
+        "vgi.result_columns_schema": "[{\"name\":\"exporter\",\"type\":\"VARCHAR\",\"description\":\"Cache key / source device (as supplied via the exporter column or derived).\"},{\"name\":\"flow_version\",\"type\":\"VARCHAR\",\"description\":\"Wire format of the source datagram: '5', '9', '10' (IPFIX), or 'sflow5'.\"},{\"name\":\"obs_domain\",\"type\":\"UINTEGER\",\"description\":\"v9 source-id / IPFIX observation domain (the template-id namespace).\"},{\"name\":\"template_id\",\"type\":\"USMALLINT\",\"description\":\"v9/IPFIX template id the record decoded against; NULL for v5 / sFlow.\"},{\"name\":\"export_time\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"Datagram export time taken from the export header.\"},{\"name\":\"sequence\",\"type\":\"UBIGINT\",\"description\":\"Export sequence number (used for gap / loss detection).\"},{\"name\":\"src_addr\",\"type\":\"STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)\",\"description\":\"Source IP; cast ::INET for `<<=` containment joins.\"},{\"name\":\"dst_addr\",\"type\":\"STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)\",\"description\":\"Destination IP; cast ::INET for `<<=` containment joins.\"},{\"name\":\"src_port\",\"type\":\"USMALLINT\",\"description\":\"Layer-4 source port.\"},{\"name\":\"dst_port\",\"type\":\"USMALLINT\",\"description\":\"Layer-4 destination port.\"},{\"name\":\"protocol\",\"type\":\"UTINYINT\",\"description\":\"IP protocol number (6 = TCP, 17 = UDP, ...).\"},{\"name\":\"tcp_flags\",\"type\":\"UTINYINT\",\"description\":\"Cumulative TCP control flags observed for the flow.\"},{\"name\":\"bytes\",\"type\":\"UBIGINT\",\"description\":\"Octet count (for sFlow, scaled by the sampling rate).\"},{\"name\":\"packets\",\"type\":\"UBIGINT\",\"description\":\"Packet count (for sFlow, the sampling rate).\"},{\"name\":\"flow_start\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"Flow start time, resolved to an absolute timestamp.\"},{\"name\":\"flow_end\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"Flow end time, resolved to an absolute timestamp.\"},{\"name\":\"src_as\",\"type\":\"UINTEGER\",\"description\":\"Origin autonomous-system number (when the exporter reports it).\"},{\"name\":\"dst_as\",\"type\":\"UINTEGER\",\"description\":\"Peer autonomous-system number (when the exporter reports it).\"},{\"name\":\"input_snmp\",\"type\":\"UINTEGER\",\"description\":\"Ingress interface ifIndex.\"},{\"name\":\"output_snmp\",\"type\":\"UINTEGER\",\"description\":\"Egress interface ifIndex.\"},{\"name\":\"next_hop\",\"type\":\"STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)\",\"description\":\"BGP / IP next hop; cast ::INET to use it.\"},{\"name\":\"tos\",\"type\":\"UTINYINT\",\"description\":\"IP type-of-service / DSCP byte.\"},{\"name\":\"src_mask\",\"type\":\"UTINYINT\",\"description\":\"Source prefix length in bits (v5 / v9).\"},{\"name\":\"dst_mask\",\"type\":\"UTINYINT\",\"description\":\"Destination prefix length in bits (v5 / v9).\"},{\"name\":\"sampling_rate\",\"type\":\"UINTEGER\",\"description\":\"sFlow sampling N / IPFIX samplingInterval; NULL when none.\"},{\"name\":\"direction\",\"type\":\"UTINYINT\",\"description\":\"flowDirection (0 = ingress, 1 = egress) when present.\"},{\"name\":\"raw_fields\",\"type\":\"MAP(VARCHAR, BLOB)\",\"description\":\"Every Information Element not mapped to a named column, keyed by IE name -> raw bytes.\"},{\"name\":\"diagnostics\",\"type\":\"VARCHAR\",\"description\":\"NULL on a clean decode; else missing-template / truncated / decode-error / ...\"}]",
+        "vgi.title": "NetFlow v5/v9 Decode (relation in)"
+      },
+      null,
+      [
+        "relation"
+      ],
+      [
+        "TABLE"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22621,
+      [
+        "SELECT exporter, flow_version, src_port, dst_port, packets FROM netflow.main.netflow_decode((SELECT from_hex('00090002000186a06553f1000000001400000001000000240100000700080004000c000400070002000b000200040001000200040001000401000019ac100001ac100002045700160600000003000000b4') AS datagram, 'router-1' AS exporter))"
+      ],
+      null,
+      []
+    ],
+    [
+      "netflow",
+      "22612",
+      "main",
+      "sflow_decode",
+      null,
+      "table",
+      "Decode sFlow v5 datagrams to normalized flow rows",
+      null,
+      {
+        "vgi.category": "decode",
+        "vgi.doc_llm": "Decode sFlow v5 (sflow.org / InMon) packet-sampling datagrams from a relation's `datagram` `BLOB` column to the normalized flow schema. Flow samples (sampled headers / sampled IPv4/IPv6) yield 5-tuple rows with byte/packet counts scaled by the sampling rate; counter samples yield rows with the counters in raw_fields. Stateless.",
+        "vgi.doc_md": "Decode sFlow v5 datagrams from a relation's `datagram` column. Stateless; sampled counts scaled by the sampling rate.",
+        "vgi.example_queries": "[{\"description\":\"Decode an sFlow v5 datagram; flow-sample rows carry the sampled 5-tuple (counter samples have NULL ports).\",\"sql\":\"SELECT flow_version, src_port, dst_port, protocol FROM netflow.main.sflow_decode((SELECT from_hex('00000005000000010a0000090000000000000001000003e8000000020000000100000048000000640000000000001000000000000000000000000005000000060000000100000003000000200000004000000006c000020ac00002140000c738000000500000001800000000000000020000006c000000c80000000000000001000000010000005800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000') AS datagram)) WHERE dst_port IS NOT NULL\"}]",
+        "vgi.executable_examples": "[{\"description\":\"Decode an sFlow v5 datagram (one flow sample + one counter sample).\",\"sql\":\"SELECT flow_version, dst_port, protocol FROM netflow.main.sflow_decode((SELECT from_hex('00000005000000010a0000090000000000000001000003e8000000020000000100000048000000640000000000001000000000000000000000000005000000060000000100000003000000200000004000000006c000020ac00002140000c738000000500000001800000000000000020000006c000000c80000000000000001000000010000005800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000') AS datagram)) WHERE dst_port IS NOT NULL\"}]",
+        "vgi.keywords": "[\"sflow\",\"sflow5\",\"sampling\",\"decode\",\"flow\",\"counters\",\"network\",\"inmon\",\"relation\"]",
+        "vgi.result_columns_schema": "[{\"name\":\"exporter\",\"type\":\"VARCHAR\",\"description\":\"Cache key / source device (as supplied via the exporter column or derived).\"},{\"name\":\"flow_version\",\"type\":\"VARCHAR\",\"description\":\"Wire format of the source datagram: '5', '9', '10' (IPFIX), or 'sflow5'.\"},{\"name\":\"obs_domain\",\"type\":\"UINTEGER\",\"description\":\"v9 source-id / IPFIX observation domain (the template-id namespace).\"},{\"name\":\"template_id\",\"type\":\"USMALLINT\",\"description\":\"v9/IPFIX template id the record decoded against; NULL for v5 / sFlow.\"},{\"name\":\"export_time\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"Datagram export time taken from the export header.\"},{\"name\":\"sequence\",\"type\":\"UBIGINT\",\"description\":\"Export sequence number (used for gap / loss detection).\"},{\"name\":\"src_addr\",\"type\":\"STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)\",\"description\":\"Source IP; cast ::INET for `<<=` containment joins.\"},{\"name\":\"dst_addr\",\"type\":\"STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)\",\"description\":\"Destination IP; cast ::INET for `<<=` containment joins.\"},{\"name\":\"src_port\",\"type\":\"USMALLINT\",\"description\":\"Layer-4 source port.\"},{\"name\":\"dst_port\",\"type\":\"USMALLINT\",\"description\":\"Layer-4 destination port.\"},{\"name\":\"protocol\",\"type\":\"UTINYINT\",\"description\":\"IP protocol number (6 = TCP, 17 = UDP, ...).\"},{\"name\":\"tcp_flags\",\"type\":\"UTINYINT\",\"description\":\"Cumulative TCP control flags observed for the flow.\"},{\"name\":\"bytes\",\"type\":\"UBIGINT\",\"description\":\"Octet count (for sFlow, scaled by the sampling rate).\"},{\"name\":\"packets\",\"type\":\"UBIGINT\",\"description\":\"Packet count (for sFlow, the sampling rate).\"},{\"name\":\"flow_start\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"Flow start time, resolved to an absolute timestamp.\"},{\"name\":\"flow_end\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"Flow end time, resolved to an absolute timestamp.\"},{\"name\":\"src_as\",\"type\":\"UINTEGER\",\"description\":\"Origin autonomous-system number (when the exporter reports it).\"},{\"name\":\"dst_as\",\"type\":\"UINTEGER\",\"description\":\"Peer autonomous-system number (when the exporter reports it).\"},{\"name\":\"input_snmp\",\"type\":\"UINTEGER\",\"description\":\"Ingress interface ifIndex.\"},{\"name\":\"output_snmp\",\"type\":\"UINTEGER\",\"description\":\"Egress interface ifIndex.\"},{\"name\":\"next_hop\",\"type\":\"STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT)\",\"description\":\"BGP / IP next hop; cast ::INET to use it.\"},{\"name\":\"tos\",\"type\":\"UTINYINT\",\"description\":\"IP type-of-service / DSCP byte.\"},{\"name\":\"src_mask\",\"type\":\"UTINYINT\",\"description\":\"Source prefix length in bits (v5 / v9).\"},{\"name\":\"dst_mask\",\"type\":\"UTINYINT\",\"description\":\"Destination prefix length in bits (v5 / v9).\"},{\"name\":\"sampling_rate\",\"type\":\"UINTEGER\",\"description\":\"sFlow sampling N / IPFIX samplingInterval; NULL when none.\"},{\"name\":\"direction\",\"type\":\"UTINYINT\",\"description\":\"flowDirection (0 = ingress, 1 = egress) when present.\"},{\"name\":\"raw_fields\",\"type\":\"MAP(VARCHAR, BLOB)\",\"description\":\"Every Information Element not mapped to a named column, keyed by IE name -> raw bytes.\"},{\"name\":\"diagnostics\",\"type\":\"VARCHAR\",\"description\":\"NULL on a clean decode; else missing-template / truncated / decode-error / ...\"}]",
+        "vgi.title": "sFlow v5 Decode (relation in)"
+      },
+      null,
+      [
+        "relation"
+      ],
+      [
+        "TABLE"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22622,
+      [
+        "SELECT flow_version, src_port, dst_port, protocol FROM netflow.main.sflow_decode((SELECT from_hex('00000005000000010a0000090000000000000001000003e8000000020000000100000048000000640000000000001000000000000000000000000005000000060000000100000003000000200000004000000006c000020ac00002140000c738000000500000001800000000000000020000006c000000c80000000000000001000000010000005800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000') AS datagram)) WHERE dst_port IS NOT NULL"
+      ],
+      null,
+      []
+    ],
+    [
+      "netflow",
+      "22612",
+      "main",
+      "templates",
+      null,
+      "table",
+      "Project the live v9/IPFIX template cache",
+      null,
+      {
+        "vgi.category": "introspection",
+        "vgi.doc_llm": "Project the live v9/IPFIX template cache: one row per learned template, with its exporter, observation domain, template id, kind (data/options), the ordered field specifiers it decodes to, and first/last-seen and use-count stats. The debugging surface for 'which templates have I learned and what do they decode to'. Optionally filter by exporter. Reflects templates learned by prior flows()/netflow_decode()/ipfix_decode() calls in this session.",
+        "vgi.doc_md": "List the learned v9/IPFIX templates and their field layouts. Optional `exporter` filter.",
+        "vgi.example_queries": "[{\"description\":\"The template cache is populated by decoding: first decode an IPFIX datagram scoped to an exporter, then introspect the cache for that exporter to see the learned template's id, kind (data/options), and field count. Reads the same session's cache, so run the decode first.\",\"sql\":\"SELECT count(*) FROM netflow.main.ipfix_decode((SELECT from_hex('000a006d6553f100000000070000002a0002002c0100000900080004000c000400070002000b0002000400010001000800020008009800080099000801000031cb007105c633640980e801bb06000000000016e36000000000000004b00000018bcfe568000000018bcfe58f10') AS datagram, 'doc-exporter' AS exporter)); SELECT exporter, template_id, kind, field_count FROM netflow.main.templates(exporter => 'doc-exporter')\"}]",
+        "vgi.executable_examples": "[{\"description\":\"Learn an IPFIX template by decoding a datagram, then list it (template id, kind, field count).\",\"sql\":\"SELECT count(*) FROM netflow.main.ipfix_decode((SELECT from_hex('000a006d6553f100000000070000002a0002002c0100000900080004000c000400070002000b0002000400010001000800020008009800080099000801000031cb007105c633640980e801bb06000000000016e36000000000000004b00000018bcfe568000000018bcfe58f10') AS datagram, 'doc-exporter' AS exporter));\\nSELECT exporter, template_id, kind, field_count FROM netflow.main.templates(exporter => 'doc-exporter');\"}]",
+        "vgi.keywords": "[\"templates\",\"template cache\",\"introspection\",\"ipfix\",\"netflow\",\"v9\",\"fields\",\"debug\",\"layout\"]",
+        "vgi.result_columns_schema": "[{\"name\":\"exporter\",\"type\":\"VARCHAR\",\"description\":\"Source device the template was learned from.\"},{\"name\":\"obs_domain\",\"type\":\"UINTEGER\",\"description\":\"Observation domain (v9 source-id / IPFIX) the template id is scoped to.\"},{\"name\":\"template_id\",\"type\":\"USMALLINT\",\"description\":\"The template id a Data Set references.\"},{\"name\":\"kind\",\"type\":\"VARCHAR\",\"description\":\"'data' for a data template or 'options' for an options template.\"},{\"name\":\"field_count\",\"type\":\"UINTEGER\",\"description\":\"Number of field specifiers in the template.\"},{\"name\":\"fields\",\"type\":\"STRUCT(ie_id USMALLINT, enterprise UINTEGER, length USMALLINT, \\\"name\\\" VARCHAR, ie_type VARCHAR)[]\",\"description\":\"The ordered field specifiers (ie_id, enterprise PEN, length, IE name, IE type).\"},{\"name\":\"scope_field_count\",\"type\":\"USMALLINT\",\"description\":\"Leading scope fields on an options template; 0 for a data template.\"},{\"name\":\"first_seen\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"When this template id was first seen.\"},{\"name\":\"last_seen\",\"type\":\"TIMESTAMP WITH TIME ZONE\",\"description\":\"When this template was most recently seen / used.\"},{\"name\":\"use_count\",\"type\":\"UBIGINT\",\"description\":\"How many data records have been decoded against it.\"}]",
+        "vgi.title": "Template Cache Introspection"
+      },
+      null,
+      [
+        "exporter"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22623,
+      [],
+      null,
+      []
+    ],
+    [
+      "netflow",
+      "22612",
+      "main",
+      "well_formed",
+      null,
+      "scalar",
+      "Validate a flow datagram's structure (never panics)",
+      null,
+      {
+        "vgi.category": "probe",
+        "vgi.doc_llm": "Validate the structure of a flow-export datagram (`BLOB`) without a full decode, returning `STRUCT(ok BOOL, version VARCHAR, error VARCHAR, kind VARCHAR)`. `kind` is one of truncated, bad-version, set-length-overrun, bad-ipfix-set, short-record, or not-a-flow-datagram. Never panics \u2014 a hostile/garbage blob returns ok=false rather than crashing the scan. Use it to triage a capture before decoding.",
+        "vgi.doc_md": "Validate a flow datagram `BLOB`'s structure \u2192 `STRUCT(ok, version, error, kind)`. Never panics on garbage.",
+        "vgi.example_queries": "[{\"description\":\"Triage a captured datagram \u2014 STRUCT(ok, version, error, kind) \u2014 before decoding.\",\"sql\":\"SELECT netflow.main.well_formed(from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')::BLOB) AS validation\"},{\"description\":\"Triage before decoding: keep only the captures that well_formed() validates (the truncated router-t datagram fails as short-record), decode those with flows(), and total the clean flows and bytes per capture.\",\"sql\":\"SELECT f.exporter, count(*) AS flows, sum(f.bytes) AS total_bytes FROM netflow.main.flows((SELECT c.datagram, c.capture AS exporter FROM (VALUES ('router-a', from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')), ('router-t', from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d20050')), ('router-9', from_hex('00090002000186a06553f1000000001400000001000000240100000700080004000c000400070002000b000200040001000200040001000401000019ac100001ac100002045700160600000003000000b4'))) AS c(capture, datagram) WHERE netflow.main.well_formed(c.datagram).ok)) AS f GROUP BY f.exporter ORDER BY f.exporter\"}]",
+        "vgi.executable_examples": "[{\"description\":\"A real NetFlow v5 datagram validates clean (ok = true, version = '5').\",\"sql\":\"SELECT netflow.main.well_formed(from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')::BLOB) AS check\"},{\"description\":\"Garbage bytes are flagged not-a-flow-datagram (ok = false).\",\"sql\":\"SELECT netflow.main.well_formed('\\\\xde\\\\xad'::BLOB).kind AS kind\"},{\"description\":\"Triage before decoding: keep only the captures that well_formed() validates (the truncated router-t datagram fails as short-record), decode those with flows(), and total the clean flows and bytes per capture.\",\"sql\":\"SELECT f.exporter, count(*) AS flows, sum(f.bytes) AS total_bytes FROM netflow.main.flows((SELECT c.datagram, c.capture AS exporter FROM (VALUES ('router-a', from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')), ('router-t', from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d20050')), ('router-9', from_hex('00090002000186a06553f1000000001400000001000000240100000700080004000c000400070002000b000200040001000200040001000401000019ac100001ac100002045700160600000003000000b4'))) AS c(capture, datagram) WHERE netflow.main.well_formed(c.datagram).ok)) AS f GROUP BY f.exporter ORDER BY f.exporter\"}]",
+        "vgi.keywords": "[\"well formed\",\"validate\",\"validation\",\"malformed\",\"truncated\",\"triage\",\"netflow\",\"ipfix\",\"sflow\"]",
+        "vgi.title": "Flow Datagram Validation"
+      },
+      "STRUCT(ok BOOLEAN, \"version\" VARCHAR, \"error\" VARCHAR, kind VARCHAR)",
+      [
+        "datagram"
+      ],
+      [
+        "BLOB"
+      ],
+      null,
+      null,
+      false,
+      true,
+      null,
+      22618,
+      [
+        "SELECT netflow.main.well_formed(from_hex('00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000')::BLOB) AS validation"
+      ],
+      "CONSISTENT",
+      []
+    ]
+  ]
+}

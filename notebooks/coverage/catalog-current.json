@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "repository": "Query-farm/vgi-netflow",
+  "revision": "032c4e67a0d4231a42f2694b348ac2f8e1f06919",
+  "captured_at": "2026-11-14T19:55:23.824117+00:00",
+  "default_schema": "main",
+  "scope": "all_public_functions_and_tables",
+  "complete": true,
+  "evidence": [
+    {
+      "path": "coverage/functions-current.json",
+      "sha256": "08041bb6bc8fa030ddb677bef2eb6753a1b2ec3a6cf1697a63a321f63b6558fa",
+      "description": "Complete worker-filtered runtime export or full output-column DESCRIBE"
+    },
+    {
+      "path": "coverage/tables-current.json",
+      "sha256": "8a6f5ac89e06ee8d06e4f70e8f7153dca9c80a815555a55d230e496ea8a07047",
+      "description": "Complete worker-filtered runtime export or full output-column DESCRIBE"
+    },
+    {
+      "path": "coverage/views-current.json",
+      "sha256": "5d5e4299d37d219bda931499798f3a1c9b39507fa2b331f123b80ff0d231ab12",
+      "description": "Complete worker-filtered runtime export or full output-column DESCRIBE"
+    },
+    {
+      "path": "coverage/arguments-current.json",
+      "sha256": "f83d92ee4a032d962d3cf9e44fcea89a6f9a871e2a1d247159d4f48e336c6f8c",
+      "description": "Complete worker-filtered runtime export or full output-column DESCRIBE"
+    },
+    {
+      "path": "coverage/catalog-metadata-current.json",
+      "sha256": "8d717432d794df21fd958539cf1a59aae9d74d8fe27e9774ff624319cbee5e7a",
+      "description": "Complete worker-filtered runtime export or full output-column DESCRIBE"
+    },
+    {
+      "path": "coverage/view-columns-current.json",
+      "sha256": "946b9abc1d74ea28a1849fad0274cf630ff692d76c129eb210d3765d6b3cfabe",
+      "description": "Complete worker-filtered runtime export or full output-column DESCRIBE"
+    },
+    {
+      "path": "coverage/flows-columns-current.json",
+      "sha256": "b704803bd5da5580f4eb5ffbb49e0fb49158e6757efc021c772f779e813bcd1b",
+      "description": "Complete worker-filtered runtime export or full output-column DESCRIBE"
+    },
+    {
+      "path": "coverage/netflow_decode-columns-current.json",
+      "sha256": "0db98b4cb3ddc8cdc194bf75f7b2f1583831a294fd23f26e94cc2a468871d947",
+      "description": "Complete worker-filtered runtime export or full output-column DESCRIBE"
+    },
+    {
+      "path": "coverage/ipfix_decode-columns-current.json",
+      "sha256": "710ebc046a59c77f8601fc568dceabc0845c53f3820b7ec3b27807c1ac154549",
+      "description": "Complete worker-filtered runtime export or full output-column DESCRIBE"
+    },
+    {
+      "path": "coverage/sflow_decode-columns-current.json",
+      "sha256": "da289ae5a5d25bbfed1636fed51cb4f12d74d3b6558f2edca584acc1459c7f95",
+      "description": "Complete worker-filtered runtime export or full output-column DESCRIBE"
+    },
+    {
+      "path": "coverage/templates-columns-current.json",
+      "sha256": "c9a76f5db798952e3cbc693c1d52635d7283987eff3f1b1b72d7202c5c6a7c2b",
+      "description": "Complete worker-filtered runtime export or full output-column DESCRIBE"
+    },
+    {
+      "path": "coverage/source-compatibility.json",
+      "sha256": "0b53fd22dd90706250813f0368d77bba02588cbc7d48b9fb6da5954b30aaf8a5",
+      "description": "Reviewed metadata-only main diff and existing green source CI"
+    }
+  ],
+  "objects": [
+    {
+      "schema": "main",
+      "name": "flow_version",
+      "kind": "function",
+      "signatures": [
+        "flow_version(datagram BLOB) -> VARCHAR"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "flows",
+      "kind": "function",
+      "signatures": [
+        "flows(relation TABLE) -> TABLE(exporter VARCHAR, flow_version VARCHAR, obs_domain UINTEGER, template_id USMALLINT, export_time TIMESTAMP WITH TIME ZONE, sequence UBIGINT, src_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), dst_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), src_port USMALLINT, dst_port USMALLINT, protocol UTINYINT, tcp_flags UTINYINT, bytes UBIGINT, packets UBIGINT, flow_start TIMESTAMP WITH TIME ZONE, flow_end TIMESTAMP WITH TIME ZONE, src_as UINTEGER, dst_as UINTEGER, input_snmp UINTEGER, output_snmp UINTEGER, next_hop STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), tos UTINYINT, src_mask UTINYINT, dst_mask UTINYINT, sampling_rate UINTEGER, direction UTINYINT, raw_fields MAP(VARCHAR, BLOB), diagnostics VARCHAR)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "header",
+      "kind": "function",
+      "signatures": [
+        "header(datagram BLOB) -> STRUCT(\"version\" USMALLINT, count USMALLINT, sys_uptime UINTEGER, export_time TIMESTAMP WITH TIME ZONE, \"sequence\" UBIGINT, obs_domain UINTEGER)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "ipfix_decode",
+      "kind": "function",
+      "signatures": [
+        "ipfix_decode(relation TABLE) -> TABLE(exporter VARCHAR, flow_version VARCHAR, obs_domain UINTEGER, template_id USMALLINT, export_time TIMESTAMP WITH TIME ZONE, sequence UBIGINT, src_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), dst_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), src_port USMALLINT, dst_port USMALLINT, protocol UTINYINT, tcp_flags UTINYINT, bytes UBIGINT, packets UBIGINT, flow_start TIMESTAMP WITH TIME ZONE, flow_end TIMESTAMP WITH TIME ZONE, src_as UINTEGER, dst_as UINTEGER, input_snmp UINTEGER, output_snmp UINTEGER, next_hop STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), tos UTINYINT, src_mask UTINYINT, dst_mask UTINYINT, sampling_rate UINTEGER, direction UTINYINT, raw_fields MAP(VARCHAR, BLOB), diagnostics VARCHAR)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "netflow_decode",
+      "kind": "function",
+      "signatures": [
+        "netflow_decode(relation TABLE) -> TABLE(exporter VARCHAR, flow_version VARCHAR, obs_domain UINTEGER, template_id USMALLINT, export_time TIMESTAMP WITH TIME ZONE, sequence UBIGINT, src_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), dst_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), src_port USMALLINT, dst_port USMALLINT, protocol UTINYINT, tcp_flags UTINYINT, bytes UBIGINT, packets UBIGINT, flow_start TIMESTAMP WITH TIME ZONE, flow_end TIMESTAMP WITH TIME ZONE, src_as UINTEGER, dst_as UINTEGER, input_snmp UINTEGER, output_snmp UINTEGER, next_hop STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), tos UTINYINT, src_mask UTINYINT, dst_mask UTINYINT, sampling_rate UINTEGER, direction UTINYINT, raw_fields MAP(VARCHAR, BLOB), diagnostics VARCHAR)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "sflow_decode",
+      "kind": "function",
+      "signatures": [
+        "sflow_decode(relation TABLE) -> TABLE(exporter VARCHAR, flow_version VARCHAR, obs_domain UINTEGER, template_id USMALLINT, export_time TIMESTAMP WITH TIME ZONE, sequence UBIGINT, src_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), dst_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), src_port USMALLINT, dst_port USMALLINT, protocol UTINYINT, tcp_flags UTINYINT, bytes UBIGINT, packets UBIGINT, flow_start TIMESTAMP WITH TIME ZONE, flow_end TIMESTAMP WITH TIME ZONE, src_as UINTEGER, dst_as UINTEGER, input_snmp UINTEGER, output_snmp UINTEGER, next_hop STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), tos UTINYINT, src_mask UTINYINT, dst_mask UTINYINT, sampling_rate UINTEGER, direction UTINYINT, raw_fields MAP(VARCHAR, BLOB), diagnostics VARCHAR)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "templates",
+      "kind": "function",
+      "signatures": [
+        "templates(exporter VARCHAR) -> TABLE(exporter VARCHAR, obs_domain UINTEGER, template_id USMALLINT, kind VARCHAR, field_count UINTEGER, fields STRUCT(ie_id USMALLINT, enterprise UINTEGER, length USMALLINT, \"name\" VARCHAR, ie_type VARCHAR)[], scope_field_count USMALLINT, first_seen TIMESTAMP WITH TIME ZONE, last_seen TIMESTAMP WITH TIME ZONE, use_count UBIGINT)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "well_formed",
+      "kind": "function",
+      "signatures": [
+        "well_formed(datagram BLOB) -> STRUCT(ok BOOLEAN, \"version\" VARCHAR, \"error\" VARCHAR, kind VARCHAR)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    },
+    {
+      "schema": "main",
+      "name": "supported_formats",
+      "kind": "table",
+      "signatures": [
+        "VIEW(format VARCHAR, version VARCHAR, rfc VARCHAR, template_stateful BOOLEAN, decoder VARCHAR, flow_version VARCHAR, notes VARCHAR)"
+      ],
+      "authentication": "none",
+      "access": "read"
+    }
+  ],
+  "runtime": "Haybarn2.0.0rc11",
+  "launch": "Existing source-built native binary; artifact SHA256 in source-compatibility.json",
+  "review_notes": "Eight functions and one public view give nine logical surfaces. Four relation-input functions were absent from the provisional static inventory. All read supplied datagrams or fixed vocabulary; decode scans update execution-scoped template state and its introspection projection,with no external writes or authentication. No exclusions. Function and view columns and actual registrations reviewed."
+}

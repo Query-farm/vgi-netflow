@@ -1,0 +1,93 @@
+{
+  "query": "DESCRIBE SELECT * FROM netflow.main.templates()",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "exporter",
+      "VARCHAR",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "obs_domain",
+      "UINTEGER",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "template_id",
+      "USMALLINT",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "kind",
+      "VARCHAR",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "field_count",
+      "UINTEGER",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "fields",
+      "STRUCT(ie_id USMALLINT, enterprise UINTEGER, length USMALLINT, \"name\" VARCHAR, ie_type VARCHAR)[]",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "scope_field_count",
+      "USMALLINT",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "first_seen",
+      "TIMESTAMP WITH TIME ZONE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "last_seen",
+      "TIMESTAMP WITH TIME ZONE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "use_count",
+      "UBIGINT",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "query": "SELECT * FROM duckdb_views() WHERE database_name='netflow' ORDER BY schema_name,view_name",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "schema_name",
+    "schema_oid",
+    "view_name",
+    "view_oid",
+    "comment",
+    "tags",
+    "internal",
+    "temporary",
+    "column_count",
+    "sql",
+    "is_bound"
+  ],
+  "rows": [
+    [
+      "netflow",
+      22612,
+      "main",
+      22815,
+      "supported_formats",
+      22816,
+      "One row per flow-export format the worker decodes, with its version, defining spec, whether decoding is template-stateful, and the decode function that handles it.",
+      {
+        "domain": "network-security",
+        "topic": "netflow-ipfix-sflow",
+        "vgi.category": "reference",
+        "vgi.doc_llm": "A curated reference listing every flow-export format this worker can decode \u2014 NetFlow v5, NetFlow v9, IPFIX (v10), and sFlow v5 \u2014 with, for each, its wire version, the RFC or vendor spec that defines it, whether decoding it is template-stateful (needs a previously-seen template, as v9 and IPFIX do), the `flow_version` value it produces in decoded rows, and which `netflow.main` decode function handles it. An agent should browse this table first to learn what is decodable and which function to call, rather than guessing a decoder's arguments up front. It is a static VALUES-backed view, so it always returns these four rows with no input.",
+        "vgi.doc_md": "Reference table of the flow-export formats the worker decodes (NetFlow v5/v9, IPFIX, sFlow v5), each with its version, defining spec, template-stateful flag, produced `flow_version` value, and handling decode function. Browse it to orient before calling a decoder.",
+        "vgi.example_queries": "[{\"description\":\"List the template-stateful formats (the ones whose decode needs a learned template) and which function decodes each.\",\"sql\":\"SELECT format, version, decoder FROM netflow.main.supported_formats WHERE template_stateful ORDER BY version\"},{\"description\":\"Look up which decode function handles IPFIX and the flow_version value it emits.\",\"sql\":\"SELECT decoder, flow_version, rfc FROM netflow.main.supported_formats WHERE format = 'IPFIX'\"}]",
+        "vgi.keywords": "[\"supported formats\",\"formats\",\"reference\",\"netflow\",\"ipfix\",\"sflow\",\"versions\",\"decoders\",\"capabilities\",\"catalog\",\"template-stateful\"]",
+        "vgi.title": "Supported Flow-Export Formats"
+      },
+      false,
+      false,
+      null,
+      "CREATE VIEW supported_formats AS SELECT format, \"version\", rfc, template_stateful, decoder, flow_version, notes FROM (SELECT * FROM (VALUES ('NetFlow', '5', 'Cisco NetFlow v5', false, 'netflow_decode', '5', 'Fixed 48-byte records; no templates.'), ('NetFlow', '9', 'RFC 3954', true, 'netflow_decode', '9', 'Template-based; the Template Set may arrive in an earlier datagram.'), ('IPFIX', '10', 'RFC 7011', true, 'ipfix_decode', '10', 'Template-based, with enterprise and variable-length Information Elements.'), ('sFlow', '5', 'sFlow.org v5', false, 'sflow_decode', 'sflow5', 'Packet sampling; byte/packet counts scaled by the sampling rate.')) AS valueslist) AS t(format, \"version\", rfc, template_stateful, decoder, flow_version, notes);",
+      false
+    ]
+  ]
+}

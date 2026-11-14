@@ -1,0 +1,657 @@
+{
+  "schema_version": 1,
+  "status": "met",
+  "meets_target": true,
+  "catalogs": {
+    "released": {
+      "catalog_status": "verified",
+      "revision": "v0.4.0",
+      "catalog_sha256": "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9",
+      "collection_reconciled": true,
+      "denominator": 9,
+      "observed_objects": 9,
+      "required": 9,
+      "verified_count": 9,
+      "candidate_count": 0,
+      "fraction": 1.0,
+      "meets_target": true,
+      "exact_runtime_count": 9,
+      "runtime_revisions": [
+        "v0.4.0"
+      ],
+      "covered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "flow_version"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "flows"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "header"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "ipfix_decode"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "netflow_decode"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "sflow_decode"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "supported_formats"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "templates"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "well_formed"
+        }
+      ],
+      "uncovered": [],
+      "objects": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "flow_version",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "flow_version(datagram BLOB) -> VARCHAR"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "flows",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "flows(relation TABLE) -> TABLE(exporter VARCHAR, flow_version VARCHAR, obs_domain UINTEGER, template_id USMALLINT, export_time TIMESTAMP WITH TIME ZONE, sequence UBIGINT, src_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), dst_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), src_port USMALLINT, dst_port USMALLINT, protocol UTINYINT, tcp_flags UTINYINT, bytes UBIGINT, packets UBIGINT, flow_start TIMESTAMP WITH TIME ZONE, flow_end TIMESTAMP WITH TIME ZONE, src_as UINTEGER, dst_as UINTEGER, input_snmp UINTEGER, output_snmp UINTEGER, next_hop STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), tos UTINYINT, src_mask UTINYINT, dst_mask UTINYINT, sampling_rate UINTEGER, direction UTINYINT, raw_fields MAP(VARCHAR, BLOB), diagnostics VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "header",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "header(datagram BLOB) -> STRUCT(\"version\" USMALLINT, count USMALLINT, sys_uptime UINTEGER, export_time TIMESTAMP WITH TIME ZONE, \"sequence\" UBIGINT, obs_domain UINTEGER)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "ipfix_decode",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "ipfix_decode(relation TABLE) -> TABLE(exporter VARCHAR, flow_version VARCHAR, obs_domain UINTEGER, template_id USMALLINT, export_time TIMESTAMP WITH TIME ZONE, sequence UBIGINT, src_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), dst_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), src_port USMALLINT, dst_port USMALLINT, protocol UTINYINT, tcp_flags UTINYINT, bytes UBIGINT, packets UBIGINT, flow_start TIMESTAMP WITH TIME ZONE, flow_end TIMESTAMP WITH TIME ZONE, src_as UINTEGER, dst_as UINTEGER, input_snmp UINTEGER, output_snmp UINTEGER, next_hop STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), tos UTINYINT, src_mask UTINYINT, dst_mask UTINYINT, sampling_rate UINTEGER, direction UTINYINT, raw_fields MAP(VARCHAR, BLOB), diagnostics VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "netflow_decode",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "netflow_decode(relation TABLE) -> TABLE(exporter VARCHAR, flow_version VARCHAR, obs_domain UINTEGER, template_id USMALLINT, export_time TIMESTAMP WITH TIME ZONE, sequence UBIGINT, src_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), dst_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), src_port USMALLINT, dst_port USMALLINT, protocol UTINYINT, tcp_flags UTINYINT, bytes UBIGINT, packets UBIGINT, flow_start TIMESTAMP WITH TIME ZONE, flow_end TIMESTAMP WITH TIME ZONE, src_as UINTEGER, dst_as UINTEGER, input_snmp UINTEGER, output_snmp UINTEGER, next_hop STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), tos UTINYINT, src_mask UTINYINT, dst_mask UTINYINT, sampling_rate UINTEGER, direction UTINYINT, raw_fields MAP(VARCHAR, BLOB), diagnostics VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "sflow_decode",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "sflow_decode(relation TABLE) -> TABLE(exporter VARCHAR, flow_version VARCHAR, obs_domain UINTEGER, template_id USMALLINT, export_time TIMESTAMP WITH TIME ZONE, sequence UBIGINT, src_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), dst_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), src_port USMALLINT, dst_port USMALLINT, protocol UTINYINT, tcp_flags UTINYINT, bytes UBIGINT, packets UBIGINT, flow_start TIMESTAMP WITH TIME ZONE, flow_end TIMESTAMP WITH TIME ZONE, src_as UINTEGER, dst_as UINTEGER, input_snmp UINTEGER, output_snmp UINTEGER, next_hop STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), tos UTINYINT, src_mask UTINYINT, dst_mask UTINYINT, sampling_rate UINTEGER, direction UTINYINT, raw_fields MAP(VARCHAR, BLOB), diagnostics VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "supported_formats",
+          "kinds": [
+            "table"
+          ],
+          "signatures": [
+            "VIEW(format VARCHAR, version VARCHAR, rfc VARCHAR, template_stateful BOOLEAN, decoder VARCHAR, flow_version VARCHAR, notes VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "templates",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "templates(exporter VARCHAR) -> TABLE(exporter VARCHAR, obs_domain UINTEGER, template_id USMALLINT, kind VARCHAR, field_count UINTEGER, fields STRUCT(ie_id USMALLINT, enterprise UINTEGER, length USMALLINT, \"name\" VARCHAR, ie_type VARCHAR)[], scope_field_count USMALLINT, first_seen TIMESTAMP WITH TIME ZONE, last_seen TIMESTAMP WITH TIME ZONE, use_count UBIGINT)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "well_formed",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "well_formed(datagram BLOB) -> STRUCT(ok BOOLEAN, \"version\" VARCHAR, \"error\" VARCHAR, kind VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        }
+      ],
+      "issues": []
+    },
+    "current": {
+      "catalog_status": "verified",
+      "revision": "032c4e67a0d4231a42f2694b348ac2f8e1f06919",
+      "catalog_sha256": "f804531aa4ddeec5838de71d1179928660da15c24c288de664e02daeeafd1117",
+      "collection_reconciled": true,
+      "denominator": 9,
+      "observed_objects": 9,
+      "required": 9,
+      "verified_count": 9,
+      "candidate_count": 0,
+      "fraction": 1.0,
+      "meets_target": true,
+      "exact_runtime_count": 0,
+      "runtime_revisions": [
+        "v0.4.0"
+      ],
+      "covered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "flow_version"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "flows"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "header"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "ipfix_decode"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "netflow_decode"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "sflow_decode"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "supported_formats"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "templates"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "well_formed"
+        }
+      ],
+      "uncovered": [],
+      "objects": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "flow_version",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "flow_version(datagram BLOB) -> VARCHAR"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "flows",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "flows(relation TABLE) -> TABLE(exporter VARCHAR, flow_version VARCHAR, obs_domain UINTEGER, template_id USMALLINT, export_time TIMESTAMP WITH TIME ZONE, sequence UBIGINT, src_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), dst_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), src_port USMALLINT, dst_port USMALLINT, protocol UTINYINT, tcp_flags UTINYINT, bytes UBIGINT, packets UBIGINT, flow_start TIMESTAMP WITH TIME ZONE, flow_end TIMESTAMP WITH TIME ZONE, src_as UINTEGER, dst_as UINTEGER, input_snmp UINTEGER, output_snmp UINTEGER, next_hop STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), tos UTINYINT, src_mask UTINYINT, dst_mask UTINYINT, sampling_rate UINTEGER, direction UTINYINT, raw_fields MAP(VARCHAR, BLOB), diagnostics VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "header",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "header(datagram BLOB) -> STRUCT(\"version\" USMALLINT, count USMALLINT, sys_uptime UINTEGER, export_time TIMESTAMP WITH TIME ZONE, \"sequence\" UBIGINT, obs_domain UINTEGER)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "ipfix_decode",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "ipfix_decode(relation TABLE) -> TABLE(exporter VARCHAR, flow_version VARCHAR, obs_domain UINTEGER, template_id USMALLINT, export_time TIMESTAMP WITH TIME ZONE, sequence UBIGINT, src_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), dst_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), src_port USMALLINT, dst_port USMALLINT, protocol UTINYINT, tcp_flags UTINYINT, bytes UBIGINT, packets UBIGINT, flow_start TIMESTAMP WITH TIME ZONE, flow_end TIMESTAMP WITH TIME ZONE, src_as UINTEGER, dst_as UINTEGER, input_snmp UINTEGER, output_snmp UINTEGER, next_hop STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), tos UTINYINT, src_mask UTINYINT, dst_mask UTINYINT, sampling_rate UINTEGER, direction UTINYINT, raw_fields MAP(VARCHAR, BLOB), diagnostics VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "netflow_decode",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "netflow_decode(relation TABLE) -> TABLE(exporter VARCHAR, flow_version VARCHAR, obs_domain UINTEGER, template_id USMALLINT, export_time TIMESTAMP WITH TIME ZONE, sequence UBIGINT, src_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), dst_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), src_port USMALLINT, dst_port USMALLINT, protocol UTINYINT, tcp_flags UTINYINT, bytes UBIGINT, packets UBIGINT, flow_start TIMESTAMP WITH TIME ZONE, flow_end TIMESTAMP WITH TIME ZONE, src_as UINTEGER, dst_as UINTEGER, input_snmp UINTEGER, output_snmp UINTEGER, next_hop STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), tos UTINYINT, src_mask UTINYINT, dst_mask UTINYINT, sampling_rate UINTEGER, direction UTINYINT, raw_fields MAP(VARCHAR, BLOB), diagnostics VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "sflow_decode",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "sflow_decode(relation TABLE) -> TABLE(exporter VARCHAR, flow_version VARCHAR, obs_domain UINTEGER, template_id USMALLINT, export_time TIMESTAMP WITH TIME ZONE, sequence UBIGINT, src_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), dst_addr STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), src_port USMALLINT, dst_port USMALLINT, protocol UTINYINT, tcp_flags UTINYINT, bytes UBIGINT, packets UBIGINT, flow_start TIMESTAMP WITH TIME ZONE, flow_end TIMESTAMP WITH TIME ZONE, src_as UINTEGER, dst_as UINTEGER, input_snmp UINTEGER, output_snmp UINTEGER, next_hop STRUCT(ip_type UTINYINT, address HUGEINT, mask USMALLINT), tos UTINYINT, src_mask UTINYINT, dst_mask UTINYINT, sampling_rate UINTEGER, direction UTINYINT, raw_fields MAP(VARCHAR, BLOB), diagnostics VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "supported_formats",
+          "kinds": [
+            "table"
+          ],
+          "signatures": [
+            "VIEW(format VARCHAR, version VARCHAR, rfc VARCHAR, template_stateful BOOLEAN, decoder VARCHAR, flow_version VARCHAR, notes VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "templates",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "templates(exporter VARCHAR) -> TABLE(exporter VARCHAR, obs_domain UINTEGER, template_id USMALLINT, kind VARCHAR, field_count UINTEGER, fields STRUCT(ie_id USMALLINT, enterprise UINTEGER, length USMALLINT, \"name\" VARCHAR, ie_type VARCHAR)[], scope_field_count USMALLINT, first_seen TIMESTAMP WITH TIME ZONE, last_seen TIMESTAMP WITH TIME ZONE, use_count UBIGINT)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "well_formed",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "well_formed(datagram BLOB) -> STRUCT(ok BOOLEAN, \"version\" VARCHAR, \"error\" VARCHAR, kind VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        }
+      ],
+      "issues": []
+    }
+  },
+  "interface_drift": {
+    "known": true,
+    "current_only": [],
+    "released_only": [],
+    "changed": []
+  },
+  "notebooks": {
+    "01_missing_template_is_not_zero_traffic.ipynb": {
+      "verified": true,
+      "issues": []
+    },
+    "02_sample_rows_are_not_packet_counts.ipynb": {
+      "verified": true,
+      "issues": []
+    }
+  },
+  "examples": [
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "flow_version"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "header"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "well_formed"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "supported_formats"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "flows"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "netflow_decode"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "templates"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "ipfix_decode"
+      },
+      "notebook": "02_sample_rows_are_not_packet_counts.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "sflow_decode"
+      },
+      "notebook": "02_sample_rows_are_not_packet_counts.ipynb",
+      "runtime_revision": "v0.4.0",
+      "runtime_catalog_sha256": "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9"
+    }
+  ],
+  "issues": []
+}

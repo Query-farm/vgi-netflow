@@ -1,0 +1,365 @@
+{
+  "schema_version": 1,
+  "catalogs": {
+    "released": {
+      "path": "coverage/catalog-released.json",
+      "sha256": "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T19:59:28.097864+00:00",
+        "catalog_sha256": "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9",
+        "notes": "Actual complete8function rows/names,0physical tables,1supported_formats view=9logical surfaces. Four relation-input decoders were missing from initial static5candidate extraction. Full function/view output columns match release and current; source diff changes metadata/composed examples only. No external writes/authentication/exclusions; scan-internal template state and historical introspection projection remain explicit. Notebook runtime is release,not current-main."
+      }
+    },
+    "current": {
+      "path": "coverage/catalog-current.json",
+      "sha256": "f804531aa4ddeec5838de71d1179928660da15c24c288de664e02daeeafd1117",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T19:59:28.097864+00:00",
+        "catalog_sha256": "f804531aa4ddeec5838de71d1179928660da15c24c288de664e02daeeafd1117",
+        "notes": "Actual complete8function rows/names,0physical tables,1supported_formats view=9logical surfaces. Four relation-input decoders were missing from initial static5candidate extraction. Full function/view output columns match release and current; source diff changes metadata/composed examples only. No external writes/authentication/exclusions; scan-internal template state and historical introspection projection remain explicit. Notebook runtime is release,not current-main."
+      }
+    }
+  },
+  "notebooks": [
+    {
+      "path": "01_missing_template_is_not_zero_traffic.ipynb",
+      "sha256": "7f97d431e9a97e42ae0f15be3773b37819348c4ca52ac41ce55bad10898d169a",
+      "execution": {
+        "path": "coverage/run-01.json",
+        "sha256": "0566989a078db5fe021e104c8d66928aa6809c35e2e0042bf22c021fcadf501a"
+      }
+    },
+    {
+      "path": "02_sample_rows_are_not_packet_counts.ipynb",
+      "sha256": "20947b760647eab2140e5ce705242197eeed9b01824537c41f20486c29ff6114",
+      "execution": {
+        "path": "coverage/run-02.json",
+        "sha256": "a0059eb5db5bc8665f8971b3e4390d7de9e850d6e8df435560395ed7608df62d"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "object": {
+        "schema": "main",
+        "name": "flow_version"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "sql": [
+        {
+          "cell": "connection",
+          "reference": "netflow.main.flow_version"
+        }
+      ],
+      "narrative_cells": [
+        "attach-story",
+        "formats-story"
+      ],
+      "result_cells": [
+        "inventory-display",
+        "formats-finding"
+      ],
+      "interpretation_cells": [
+        "formats-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T19:59:28.097864+00:00",
+        "notebook_sha256": "7f97d431e9a97e42ae0f15be3773b37819348c4ca52ac41ce55bad10898d169a",
+        "catalog_sha256": [
+          "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9",
+          "f804531aa4ddeec5838de71d1179928660da15c24c288de664e02daeeafd1117"
+        ],
+        "purpose": "Route actual authored datagram versions into documented format semantics before decoding.",
+        "finding": "Three roles contain v5 fixed-layout data and v9 template/data. Both versions map to netflow_decode,but v9 alone requires template context."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "header"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "sql": [
+        {
+          "cell": "connection",
+          "reference": "netflow.main.header"
+        }
+      ],
+      "narrative_cells": [
+        "attach-story"
+      ],
+      "result_cells": [
+        "inventory-display",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "accounting-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T19:59:28.097864+00:00",
+        "notebook_sha256": "7f97d431e9a97e42ae0f15be3773b37819348c4ca52ac41ce55bad10898d169a",
+        "catalog_sha256": [
+          "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9",
+          "f804531aa4ddeec5838de71d1179928660da15c24c288de664e02daeeafd1117"
+        ],
+        "purpose": "Retain observation-domain/export-clock context and compare the v5 declared count with decoded records.",
+        "finding": "Invented UTC export clock and domain remain visible; the v5 header count agrees with two decoded control rows,which remain fixed when only the v9 template is withheld."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "well_formed"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "sql": [
+        {
+          "cell": "connection",
+          "reference": "netflow.main.well_formed"
+        }
+      ],
+      "narrative_cells": [
+        "attach-story",
+        "decode-story"
+      ],
+      "result_cells": [
+        "inventory-display"
+      ],
+      "interpretation_cells": [
+        "accounting-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T19:59:28.097864+00:00",
+        "notebook_sha256": "7f97d431e9a97e42ae0f15be3773b37819348c4ca52ac41ce55bad10898d169a",
+        "catalog_sha256": [
+          "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9",
+          "f804531aa4ddeec5838de71d1179928660da15c24c288de664e02daeeafd1117"
+        ],
+        "purpose": "Distinguish structural validity from sufficient decoder context.",
+        "finding": "All selected datagrams remain structurally valid in both runs. Withholding the template still produces a missing-template diagnostic and unknown v9 counters,not zero traffic."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "supported_formats"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "sql": [
+        {
+          "cell": "formats-query",
+          "reference": "netflow.main.supported_formats"
+        }
+      ],
+      "narrative_cells": [
+        "formats-story"
+      ],
+      "result_cells": [
+        "formats-finding"
+      ],
+      "interpretation_cells": [
+        "formats-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T19:59:28.097864+00:00",
+        "notebook_sha256": "7f97d431e9a97e42ae0f15be3773b37819348c4ca52ac41ce55bad10898d169a",
+        "catalog_sha256": [
+          "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9",
+          "f804531aa4ddeec5838de71d1179928660da15c24c288de664e02daeeafd1117"
+        ],
+        "purpose": "Use the worker reference to explain observed versions and select the family-specific decoder.",
+        "finding": "The joined reference identifies v5 as stateless and v9 as template-stateful,with netflow_decode handling both. Vocabulary does not prove this scan received a template."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "flows"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "sql": [
+        {
+          "cell": "decode-query",
+          "reference": "netflow.main.flows"
+        }
+      ],
+      "narrative_cells": [
+        "decode-story"
+      ],
+      "result_cells": [
+        "outcomes-chart",
+        "traffic-chart"
+      ],
+      "interpretation_cells": [
+        "accounting-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T19:59:28.097864+00:00",
+        "notebook_sha256": "7f97d431e9a97e42ae0f15be3773b37819348c4ca52ac41ce55bad10898d169a",
+        "catalog_sha256": [
+          "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9",
+          "f804531aa4ddeec5838de71d1179928660da15c24c288de664e02daeeafd1117"
+        ],
+        "purpose": "Establish a complete synthetic reference using the unified relation-input decoder.",
+        "finding": "The fixed reference gives3decoded rows and2000traffic bytes. It explains this deliberate omission while providing no general missing-traffic estimator."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "netflow_decode"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "sql": [
+        {
+          "cell": "decode-query",
+          "reference": "netflow.main.netflow_decode"
+        }
+      ],
+      "narrative_cells": [
+        "decode-story",
+        "counters-story"
+      ],
+      "result_cells": [
+        "rows-display",
+        "outcomes-chart",
+        "traffic-chart"
+      ],
+      "interpretation_cells": [
+        "accounting-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T19:59:28.097864+00:00",
+        "notebook_sha256": "7f97d431e9a97e42ae0f15be3773b37819348c4ca52ac41ce55bad10898d169a",
+        "catalog_sha256": [
+          "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9",
+          "f804531aa4ddeec5838de71d1179928660da15c24c288de664e02daeeafd1117"
+        ],
+        "purpose": "Decode the selected NetFlow-only stream independently and retain diagnostic rows and unavailable aggregates.",
+        "finding": "Including the v9 template yields3flows/2000bytes; withholding it leaves2v5flows/1200known bytes plus1missing-template diagnostic. Known grouped counters reconcile and unavailable v9 counters remainNULL."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "templates"
+      },
+      "notebook": "01_missing_template_is_not_zero_traffic.ipynb",
+      "sql": [
+        {
+          "cell": "decode-query",
+          "reference": "netflow.main.templates"
+        }
+      ],
+      "narrative_cells": [
+        "templates-story"
+      ],
+      "result_cells": [
+        "templates-finding"
+      ],
+      "interpretation_cells": [
+        "templates-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T19:59:28.097864+00:00",
+        "notebook_sha256": "7f97d431e9a97e42ae0f15be3773b37819348c4ca52ac41ce55bad10898d169a",
+        "catalog_sha256": [
+          "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9",
+          "f804531aa4ddeec5838de71d1179928660da15c24c288de664e02daeeafd1117"
+        ],
+        "purpose": "Inspect the actual learned field layout while distinguishing historical introspection from scan-local context.",
+        "finding": "After the fixed reference,edge-b/domain1/template256 has7ordered fields and1use. Its materialized snapshot precedes the selected scan and cannot prime that scan when its input template is withheld."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "ipfix_decode"
+      },
+      "notebook": "02_sample_rows_are_not_packet_counts.ipynb",
+      "sql": [
+        {
+          "cell": "specialized-query",
+          "reference": "netflow.main.ipfix_decode"
+        }
+      ],
+      "narrative_cells": [
+        "specialized-story",
+        "weights-story"
+      ],
+      "result_cells": [
+        "specialized-query"
+      ],
+      "interpretation_cells": [
+        "specialized-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T19:59:28.097864+00:00",
+        "notebook_sha256": "20947b760647eab2140e5ce705242197eeed9b01824537c41f20486c29ff6114",
+        "catalog_sha256": [
+          "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9",
+          "f804531aa4ddeec5838de71d1179928660da15c24c288de664e02daeeafd1117"
+        ],
+        "purpose": "Keep an exported IPFIX record and its counter provenance separate from sFlow weighting.",
+        "finding": "The authored IPFIX record contains1500000bytes/1200packets and aNULLsampling-rate field. That absence is not a claim about arbitrary exporter sampling; the control stays unchanged across row-mode experiments."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "sflow_decode"
+      },
+      "notebook": "02_sample_rows_are_not_packet_counts.ipynb",
+      "sql": [
+        {
+          "cell": "specialized-query",
+          "reference": "netflow.main.sflow_decode"
+        }
+      ],
+      "narrative_cells": [
+        "specialized-story",
+        "weights-story"
+      ],
+      "result_cells": [
+        "specialized-query",
+        "weights-chart"
+      ],
+      "interpretation_cells": [
+        "weights-chart",
+        "checks-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T19:59:28.097864+00:00",
+        "notebook_sha256": "20947b760647eab2140e5ce705242197eeed9b01824537c41f20486c29ff6114",
+        "catalog_sha256": [
+          "41bbf7127d5240f136adc4873f88cebef53c5b594cba2c2bbef1623c19cd76e9",
+          "f804531aa4ddeec5838de71d1179928660da15c24c288de664e02daeeafd1117"
+        ],
+        "purpose": "Materialize a fixed specialized reference with sampled flow and counter-sample categories,then reconcile weighting from raw fields.",
+        "finding": "The specialized result retains1flow sample and1counter sample. Raw length64 and weight4096 explain262144normalized bytes/4096packets. Unified flows-only mode drops the counter row while retaining exactly the same flow record; advisory diagnostic-column category is not a decode failure."
+      }
+    }
+  ]
+}
