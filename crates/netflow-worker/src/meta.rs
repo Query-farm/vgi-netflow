@@ -149,6 +149,12 @@ pub fn sample_v5_truncated_hex() -> &'static str {
     &SAMPLE_V5_HEX[..120]
 }
 
+/// `SAMPLE_V5_HEX` cut short inside its second record: the first record still
+/// decodes cleanly and the second becomes a `truncated` diagnostic row.
+pub fn sample_v5_partial_hex() -> &'static str {
+    &SAMPLE_V5_HEX[..184]
+}
+
 /// Composed examples: each combines two or more of the worker's own objects in
 /// one realistic, offline, deterministic query over the inline sample datagrams.
 /// Each is defined once here and referenced from the schema-level

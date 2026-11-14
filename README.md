@@ -91,7 +91,8 @@ WHERE f.src_addr::INET <<= '10.0.0.0/8'::INET   -- DuckDB inet uses <<= / >>=
 
 -- 3. Per-version scalars + exporter-specific IEs via the raw_fields MAP.
 --    Decode the relation once and join rows back to their source datagram by
---    exporter (here the file name) — a correlated flows(d.content) does not bind.
+--    exporter (here the file name) — a correlated flows(d.content) per row is not
+--    supported (DuckDB 2.0 raises an internal FinalExecute error).
 WITH caps AS (SELECT content AS datagram, filename AS exporter
               FROM read_blob('caps/*.dat'))
 SELECT c.exporter,

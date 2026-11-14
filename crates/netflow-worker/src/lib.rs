@@ -423,13 +423,15 @@ fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
             ),
         },
         AgentTask {
-            name: "find_short_capture",
+            name: "count_lost_records",
             prompt: format!(
-                "Two NetFlow v5 captures, given as hex. router-a: {SAMPLE_V5_HEX}. router-b: \
-                 {truncated}. Compare the record count each export header declares with the \
-                 number of clean rows (no diagnostics) the NetFlow decoder actually produces for \
-                 that capture, and tell me which capture lost records. One row, one column named \
-                 exporter.",
+                "Three NetFlow v5 captures, given as hex. router-a: {SAMPLE_V5_HEX}. router-b: \
+                 {partial}. router-c: {truncated}. For each capture, compare the record count its \
+                 export header declares with the number of clean rows (no diagnostics) the \
+                 NetFlow decoder actually produces for it; how many flow records were lost in \
+                 total across all three captures? One row, one integer column named \
+                 lost_records.",
+                partial = crate::meta::sample_v5_partial_hex(),
                 truncated = crate::meta::sample_v5_truncated_hex()
             ),
         },
