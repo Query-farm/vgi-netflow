@@ -21,6 +21,19 @@
       "source_path": "test/data/v9_2data.dat",
       "bytes": 45,
       "sha256": "a6289a131f9b611517259cec2043653c33627c24c8d8e5a749a096d69348ce3b"
+    },
+    {
+      "file": "ipfix.dat",
+      "source_path": "test/data/ipfix.dat",
+      "bytes": 109,
+      "sha256": "7ec4f800deddccdaad3014f8c318087fd059fc48935c78d2db369f7fa6336ce4"
+    },
+    {
+      "file": "sflow.dat",
+      "source_path": "test/data/sflow.dat",
+      "bytes": 224,
+      "sha256": "8e44b9f6384b273e93375bc50ea4b0e7b8c661d87ca1f0895e344368aaf68211"
     }
-  ]
+  ],
+  "clock_scope": "The invented export timestamp applies to NetFlow/IPFIX fixtures; sFlow has no export timestamp."
 }
