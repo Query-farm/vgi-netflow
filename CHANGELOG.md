@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.2 — 2026-11-14
+
+### Changed
+- Docs link to upstream sources (vgi-lint VGI183): the catalog `vgi.doc_md` now
+  ends with a "Sources and references" section linking RFC 3954 (NetFlow v9), RFC 7011 (IPFIX), the IANA IPFIX registry and sFlow v5.
+
 ## 0.4.1 — 2026-11-14
 
 ### Fixed

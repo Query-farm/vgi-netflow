@@ -97,7 +97,12 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                  never dropped.\n\nAddresses are emitted as DuckDB **INET** (`LOAD inet;`), so \
                  `src_addr::INET <<= '10.0.0.0/8'::INET` containment joins to geoip / threat-intel \
                  work directly. The worker decodes captured bytes only — it opens no UDP socket and \
-                 makes no egress (collector mode is roadmap)."
+                 makes no egress (collector mode is roadmap).\n\n\
+                 ## Sources and references\n\n\
+                 - [RFC 3954](https://www.rfc-editor.org/rfc/rfc3954) — Cisco NetFlow Services Export Version 9\n\
+                 - [RFC 7011](https://www.rfc-editor.org/rfc/rfc7011) — IPFIX protocol\n\
+                 - [IANA IPFIX Information Elements](https://www.iana.org/assignments/ipfix/ipfix.xhtml) — the element ids behind `raw_fields`\n\
+                 - [sFlow Version 5](https://sflow.org/sflow_version_5.txt)"
                     .to_string(),
             ),
             (
