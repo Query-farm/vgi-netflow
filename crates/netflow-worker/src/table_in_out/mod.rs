@@ -5,7 +5,7 @@
 //! `vgi-mft` — these are table-in-out functions: you pass a **relation** whose
 //! columns are read by name, e.g.
 //! `FROM netflow.main.flows((FROM (SELECT content AS datagram, filename AS exporter
-//! FROM read_blob('caps/*.dat'))))`. The `exporter` column may therefore vary
+//! FROM read_blob('captures/*.dat'))))`. The `exporter` column may therefore vary
 //! per row (per-file cache scoping), which a literal table-function parameter
 //! could not express.
 

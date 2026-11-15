@@ -31,11 +31,12 @@ Every [GitHub release](https://github.com/Query-farm/vgi-netflow/releases) ships
 INSTALL vgi FROM community;
 LOAD vgi;
 
-ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-netflow@v0.4.0');
+ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-netflow@v0.4.1');
 
--- After decoding, inspect which v9/IPFIX templates the worker learned in this session,
--- per exporter.
-SELECT exporter, template_id, kind, field_count FROM netflow.main.templates() ORDER BY exporter, template_id;
+-- Decode a sample IPFIX capture (pinned to a release tag) as exporter 'edge-1',
+-- then inspect the v9/IPFIX templates the worker learned from it.
+SELECT count(*) AS flows FROM netflow.main.flows((FROM (SELECT content AS datagram, 'edge-1' AS exporter FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-netflow/v0.4.0/test/data/ipfix.dat'))));
+SELECT exporter, template_id, kind, field_count FROM netflow.main.templates(exporter => 'edge-1') ORDER BY template_id;
 
 -- List the template-stateful formats (the ones whose decode needs a learned template)
 -- and which function decodes each.
@@ -44,14 +45,14 @@ SELECT format, version, decoder FROM netflow.main.supported_formats WHERE templa
 
 `src_addr` / `dst_addr` / `next_hop` are emitted as native `INET`, so also run `LOAD inet;` before decoding flows (see [INET addressing](#inet-addressing)).
 
-Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64). `github-auto://` needs an explicit release tag; change `@v0.4.0` to move to a newer release.
+Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64). `github-auto://` needs an explicit release tag; change `@v0.4.1` to move to a newer release.
 
 ### Other ways to run it
 
 - **Docker** (the image bundles the worker; needs a container runtime):
 
   ```sql
-  ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-netflow:0.4.0');
+  ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-netflow:0.4.1');
   ```
 
 - **Manual download.** Download the archive for your platform from the [releases page](https://github.com/Query-farm/vgi-netflow/releases), verify it against its `.sha256` file (a cosign `.cosign.bundle` is published alongside), unpack it, and set `LOCATION` to the path of the extracted worker executable.
@@ -92,9 +93,12 @@ WHERE f.src_addr::INET <<= '10.0.0.0/8'::INET   -- DuckDB inet uses <<= / >>=
 -- 3. Per-version scalars + exporter-specific IEs via the raw_fields MAP.
 --    Decode the relation once and join rows back to their source datagram by
 --    exporter (here the file name) — a correlated flows(d.content) per row is not
---    supported (DuckDB 2.0 raises an internal FinalExecute error).
+--    supported (DuckDB 2.0 raises an internal FinalExecute error). These read the
+--    repo's sample captures by tag-pinned URL; point read_blob at your own files.
 WITH caps AS (SELECT content AS datagram, filename AS exporter
-              FROM read_blob('caps/*.dat'))
+              FROM read_blob(['https://raw.githubusercontent.com/Query-farm/vgi-netflow/v0.4.0/test/data/v5.dat',
+                                'https://raw.githubusercontent.com/Query-farm/vgi-netflow/v0.4.0/test/data/v9.dat',
+                                'https://raw.githubusercontent.com/Query-farm/vgi-netflow/v0.4.0/test/data/ipfix.dat']))
 SELECT c.exporter,
        netflow.main.flow_version(c.datagram)   AS ver,    -- '5' / '9' / '10' / 'sflow5'
        netflow.main.header(c.datagram).sequence AS seq,
@@ -105,8 +109,9 @@ ORDER BY c.exporter, seq;
 
 -- 4. Loss check: does each NetFlow v5 capture decode as many clean records as
 --    its export header declares? (header() + netflow_decode() together.)
+--    No rows means no capture lost records.
 WITH caps AS (SELECT content AS datagram, filename AS exporter
-              FROM read_blob('caps/v5/*.dat'))
+              FROM read_blob('https://raw.githubusercontent.com/Query-farm/vgi-netflow/v0.4.0/test/data/v5.dat'))
 SELECT c.exporter,
        netflow.main.header(c.datagram).count AS declared_records,
        coalesce(d.clean_rows, 0)            AS clean_rows

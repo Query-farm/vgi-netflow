@@ -17,7 +17,7 @@
 //! -- column (and optional per-row `exporter`), not a correlated LATERAL column.
 //! SELECT src_addr::INET, dst_addr::INET, bytes
 //! FROM netflow.main.flows((FROM (SELECT content AS datagram, filename AS exporter
-//!                                 FROM read_blob('caps/*.dat'))))
+//!                                 FROM read_blob('captures/*.dat'))))
 //! WHERE diagnostics IS NULL;
 //! ```
 //!
@@ -199,24 +199,59 @@ fn catalog_metadata(name: &str) -> CatalogModel {
     }
 }
 
+/// A committed sample capture (`test/data/<file>`) by a release-tag-pinned
+/// raw.githubusercontent.com URL, so archive-pattern examples decode real
+/// datagrams for any user (a relative path only resolves inside this repo).
+macro_rules! sample_capture_url {
+    ($file:literal) => {
+        concat!(
+            "https://raw.githubusercontent.com/Query-farm/vgi-netflow/v0.4.0/test/data/",
+            $file
+        )
+    };
+}
+
 /// The schema-level `vgi.example_queries`: the archive-pattern illustrations
 /// followed by every composed example (shared with the driving objects' lists).
 fn schema_example_queries() -> String {
     let composed = crate::meta::composed_examples();
     let mut examples: Vec<(&str, &str)> = vec![
         (
-            "Route a mixed column of captured datagrams: label each by its \
-             flow-export version before decoding.",
-            "SELECT netflow.main.flow_version(content) AS version, count(*) \
-             FROM read_blob('caps/*.dat') GROUP BY version ORDER BY version",
+            "Route a mixed set of captured datagrams (sample NetFlow v5/v9, IPFIX, \
+             and sFlow captures fetched by URL): label each by its flow-export \
+             version before decoding.",
+            concat!(
+                "SELECT netflow.main.flow_version(content) AS version, count(*) \
+                 FROM read_blob(['",
+                sample_capture_url!("v5.dat"),
+                "', '",
+                sample_capture_url!("v9.dat"),
+                "', '",
+                sample_capture_url!("ipfix.dat"),
+                "', '",
+                sample_capture_url!("sflow.dat"),
+                "']) GROUP BY version ORDER BY version"
+            ),
         ),
         (
-            "Decode a capture archive to normalized flow rows and join source \
-             addresses to a threat-intel prefix list via INET containment.",
-            "SELECT f.src_addr::INET AS src, f.dst_port, f.bytes \
-             FROM netflow.main.flows((FROM (SELECT content AS datagram, \
-             filename AS exporter FROM read_blob('caps/*.dat')))) f \
-             WHERE f.diagnostics IS NULL AND f.src_addr::INET <<= '10.0.0.0/8'::INET",
+            "Decode a set of captures (sample datagrams fetched by URL; point \
+             read_blob at your own capture archive) to normalized flow rows and \
+             keep the flows whose source address falls in 10.0.0.0/8 via INET \
+             containment.",
+            concat!(
+                "SELECT f.src_addr::INET AS src, f.dst_port, f.bytes \
+                 FROM netflow.main.flows((FROM (SELECT content AS datagram, \
+                 filename AS exporter FROM read_blob(['",
+                sample_capture_url!("v5.dat"),
+                "', '",
+                sample_capture_url!("v9.dat"),
+                "', '",
+                sample_capture_url!("ipfix.dat"),
+                "', '",
+                sample_capture_url!("sflow.dat"),
+                "'])))) f \
+                 WHERE f.diagnostics IS NULL AND f.src_addr::INET <<= '10.0.0.0/8'::INET"
+            ),
         ),
         (
             "After decoding, inspect which v9/IPFIX templates the worker learned \
