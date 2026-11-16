@@ -24,6 +24,7 @@ fn main() {
         ("ipfix.dat", fixtures::ipfix_basic()),
         ("ipfix_var.dat", fixtures::ipfix_variable_enterprise()),
         ("ipfix_options.dat", fixtures::ipfix_options()),
+        ("ipfix_mac.dat", fixtures::ipfix_mac()),
         ("sflow.dat", fixtures::sflow_basic()),
     ];
     for (name, bytes) in files {

@@ -20,9 +20,12 @@
 /// `SAMPLE_V9_HEX`     — NetFlow v9, template + one data record in one datagram.
 /// `SAMPLE_IPFIX_HEX`  — IPFIX (v10), template + one fully-decodable IPv4/TCP flow.
 /// `SAMPLE_SFLOW_HEX`  — sFlow v5, one flow sample + one counter sample.
+/// `SAMPLE_IPFIX_MAC_HEX` — IPFIX with sourceMacAddress / destinationMacAddress:
+///                       an Apple NIC, a randomized MAC, and a Raspberry Pi.
 pub const SAMPLE_V5_HEX: &str = "00050002000186a06553f100000000000000000a000100000a0000010a0000020a0000fe000100020000000a000003e800015f900001731804d2005000180600fbf4fbf518180000c0a80101080808080a0000fe0001000200000002000000c800015f900001731814e900350000110000003b4118180000";
 pub const SAMPLE_V9_HEX: &str = "00090002000186a06553f1000000001400000001000000240100000700080004000c000400070002000b000200040001000200040001000401000019ac100001ac100002045700160600000003000000b4";
 pub const SAMPLE_IPFIX_HEX: &str = "000a006d6553f100000000070000002a0002002c0100000900080004000c000400070002000b0002000400010001000800020008009800080099000801000031cb007105c633640980e801bb06000000000016e36000000000000004b00000018bcfe568000000018bcfe58f10";
+pub const SAMPLE_IPFIX_MAC_HEX: &str = "000a00846553f100000000070000002a0002001c0103000500080004000c000400380006005000060001000801030058c0a8010ac0a80101001b638445e6fcfbfb01020300000000000003e8c0a8010bc0a80101daa119123456fcfbfb01020300000000000007d0c0a8010cc0a80101b827eb0a0b0cffffffffffff0000000000000bb8";
 pub const SAMPLE_SFLOW_HEX: &str = "00000005000000010a0000090000000000000001000003e8000000020000000100000048000000640000000000001000000000000000000000000005000000060000000100000003000000200000004000000006c000020ac00002140000c738000000500000001800000000000000020000006c000000c80000000000000001000000010000005800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
 /// Encode `(description, sql)` pairs as the `vgi.executable_examples` JSON array
@@ -235,6 +238,25 @@ pub fn composed_header_reconcile() -> (&'static str, String) {
     )
 }
 
+/// `flows` + `oui_vendor` + `mac_is_local` + `mac_normalize`: attribute each
+/// decoded L2 flow's source MAC to its IEEE-registered vendor and flag the
+/// randomized (locally administered) ones.
+pub fn composed_mac_enrichment() -> (&'static str, String) {
+    (
+        "Enrich decoded IPFIX flows with Layer-2 identity: take each flow's \
+         sourceMacAddress from raw_fields, normalize it, look up its IEEE-registered vendor \
+         with oui_vendor(), and flag randomized (locally administered) MACs with \
+         mac_is_local() — the randomized phone MAC has no vendor.",
+        format!(
+            "SELECT netflow.main.mac_normalize(f.raw_fields['sourceMacAddress']) AS src_mac, \
+             netflow.main.oui_vendor(f.raw_fields['sourceMacAddress']) AS vendor, \
+             netflow.main.mac_is_local(f.raw_fields['sourceMacAddress']) AS randomized, \
+             f.bytes FROM netflow.main.flows((SELECT from_hex('{SAMPLE_IPFIX_MAC_HEX}') \
+             AS datagram)) AS f ORDER BY src_mac"
+        ),
+    )
+}
+
 /// Every composed example, in the order the schema-level list shows them.
 pub fn composed_examples() -> Vec<(&'static str, String)> {
     vec![
@@ -242,5 +264,6 @@ pub fn composed_examples() -> Vec<(&'static str, String)> {
         composed_route_by_decoder(),
         composed_triage_then_decode(),
         composed_header_reconcile(),
+        composed_mac_enrichment(),
     ]
 }

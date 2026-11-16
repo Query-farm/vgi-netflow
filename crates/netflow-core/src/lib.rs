@@ -6,6 +6,10 @@
 //! and the normalized cross-version schema (§5) live here and are unit-tested
 //! directly. The `netflow-worker` crate is a thin Arrow / VGI adapter over this.
 //!
+//! [`mac`] and [`oui`] add MAC-address enrichment for flow rows: notation
+//! parsing, address-bit flags, modified EUI-64, and vendor lookup against a
+//! bundled IEEE MA-L / MA-M / MA-S registry snapshot (no runtime I/O).
+//!
 //! ## Robustness
 //!
 //! Every decoder is fed untrusted bytes; reads are bounds-checked through
@@ -21,7 +25,9 @@ pub mod cache;
 pub mod decode;
 pub mod fixtures;
 pub mod inet;
+pub mod mac;
 pub mod normalize;
+pub mod oui;
 pub mod registry;
 pub mod wellformed;
 

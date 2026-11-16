@@ -60,7 +60,8 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                     "netflow, ipfix, sflow, flow, flow records, netflow v5, netflow v9, ipfix v10, \
                      rfc 3954, rfc 7011, sflow v5, template, observation domain, network, security, \
                      observability, ndr, netsecops, flow lake, geoip, asn, threat intel, decode, \
-                     datagram, information element",
+                     datagram, information element, mac address, oui, mac vendor, ieee, \
+                     eui-64, mac randomization",
                 ),
             ),
             (
@@ -77,7 +78,12 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                  archives — join flows to geoip/ASN, threat-intel, and asset inventory, at scale, \
                  with no collector. Reach for it whenever you have raw exporter datagrams (or UDP \
                  payloads carved out of pcap) in a `BLOB` column and want queryable, normalized flow \
-                 rows without standing up a collector stack."
+                 rows without standing up a collector stack. It also enriches the \
+                 Layer-2 side: MAC addresses (including the ones IPFIX exports in raw_fields) can \
+                 be attributed to their IEEE-registered hardware vendor from a bundled MA-L/MA-M/\
+                 MA-S registry snapshot, normalized, checked for multicast / randomized \
+                 (locally administered) / broadcast bits, and converted to and from IPv6 SLAAC \
+                 interface identifiers."
                     .to_string(),
             ),
             (
@@ -98,11 +104,18 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                  `src_addr::INET <<= '10.0.0.0/8'::INET` containment joins to geoip / threat-intel \
                  work directly. The worker decodes captured bytes only — it opens no UDP socket and \
                  makes no egress (collector mode is roadmap).\n\n\
+                 **MAC enrichment** works on any MAC — text in any notation, the 6-byte values \
+                 IPFIX exports in `raw_fields['sourceMacAddress']`, or a number: resolve the \
+                 IEEE-registered vendor from a bundled MA-L/MA-M/MA-S snapshot (no network), \
+                 canonicalize the notation, read the multicast / locally-administered \
+                 (randomized) / broadcast bits, and convert to and from modified EUI-64.\n\n\
                  ## Sources and references\n\n\
                  - [RFC 3954](https://www.rfc-editor.org/rfc/rfc3954) — Cisco NetFlow Services Export Version 9\n\
                  - [RFC 7011](https://www.rfc-editor.org/rfc/rfc7011) — IPFIX protocol\n\
                  - [IANA IPFIX Information Elements](https://www.iana.org/assignments/ipfix/ipfix.xhtml) — the element ids behind `raw_fields`\n\
-                 - [sFlow Version 5](https://sflow.org/sflow_version_5.txt)"
+                 - [sFlow Version 5](https://sflow.org/sflow_version_5.txt)\n\
+                 - [IEEE Registration Authority MAC registries](https://standards-oui.ieee.org/) — MA-L / MA-M / MA-S, the source of `oui_vendor`\n\
+                 - [RFC 4291 Appendix A](https://www.rfc-editor.org/rfc/rfc4291#appendix-A) — modified EUI-64 interface identifiers"
                     .to_string(),
             ),
             (
@@ -143,7 +156,9 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                     "vgi.keywords".to_string(),
                     crate::meta::keywords_json(
                         "flows, netflow_decode, ipfix_decode, sflow_decode, templates, \
-                         flow_version, header, well_formed, netflow, ipfix, sflow, template",
+                         flow_version, header, well_formed, netflow, ipfix, sflow, template, \
+                         oui_vendor, oui_lookup, mac_normalize, mac_is_multicast, mac_is_local, \
+                         mac_is_broadcast, eui48_to_eui64, mac_from_ipv6, mac address",
                     ),
                 ),
                 ("domain".to_string(), "network-security".to_string()),
@@ -153,7 +168,9 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                     "vgi.doc_llm".to_string(),
                     "The single schema for the netflow worker. It groups flow-export decoders \
                      (turn a captured datagram column into normalized flow rows), template-cache \
-                     introspection, and lightweight probe/validation scalars. The decoders thread \
+                     introspection, lightweight probe/validation scalars, and MAC-address \
+                     enrichment scalars (IEEE vendor lookup, normalization, address-bit flags, \
+                     EUI-64). The decoders thread \
                      a per-exporter, per-observation-domain template cache as externalized scan \
                      state so template-based v9/IPFIX data decodes against templates seen in \
                      earlier datagrams. Start from `supported_formats` to see which formats decode \
@@ -175,7 +192,11 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                      per-observation-domain templates the stateful v9/IPFIX decoders have learned \
                      so far in the session.\n\
                      - **Probe / validation scalars** identify or structurally validate a single \
-                     datagram cheaply, without running a full decode.\n\n\
+                     datagram cheaply, without running a full decode.\n\
+                     - **MAC enrichment scalars** resolve a MAC address's IEEE-registered vendor \
+                     from a bundled registry snapshot, normalize its notation, read its \
+                     multicast / locally-administered (randomized) / broadcast bits, and convert \
+                     to and from modified EUI-64 (IPv6 SLAAC).\n\n\
                      A small **reference** table lists the flow-export formats the worker \
                      understands and which decoder handles each, so an agent can orient before \
                      calling anything. Browse that first, then reach for the matching decoder."
@@ -189,6 +210,9 @@ fn catalog_metadata(name: &str) -> CatalogModel {
                      per-exporter, per-observation-domain template cache that stateful v9/IPFIX \
                      decode depends on.\"},{\"name\":\"probe\",\"description\":\"Lightweight \
                      scalars that identify or validate a datagram without a full decode.\"},\
+                     {\"name\":\"enrichment\",\"description\":\"MAC-address scalars: IEEE \
+                     vendor lookup, notation normalization, multicast / locally-administered / \
+                     broadcast flags, and modified EUI-64 conversion.\"},\
                      {\"name\":\"reference\",\"description\":\"Curated lookup tables an agent can \
                      browse to orient — e.g. the flow-export formats this worker decodes and the \
                      function that handles each.\"}]"
@@ -384,7 +408,8 @@ fn formats_view() -> CatView {
 /// result, so an honest solution grades cleanly against the hidden reference.
 fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
     use crate::meta::{
-        AgentTask, SAMPLE_IPFIX_HEX, SAMPLE_SFLOW_HEX, SAMPLE_V5_HEX, SAMPLE_V9_HEX,
+        AgentTask, SAMPLE_IPFIX_HEX, SAMPLE_IPFIX_MAC_HEX, SAMPLE_SFLOW_HEX, SAMPLE_V5_HEX,
+        SAMPLE_V9_HEX,
     };
     vec![
         AgentTask {
@@ -473,6 +498,61 @@ fn agent_test_tasks() -> Vec<crate::meta::AgentTask> {
                  lost_records.",
                 partial = crate::meta::sample_v5_partial_hex(),
                 truncated = crate::meta::sample_v5_truncated_hex()
+            ),
+        },
+        AgentTask {
+            name: "mac_vendor",
+            prompt: "Which organization is the IEEE-registered vendor of the network card with \
+                     MAC address 00-1B-63-84-45-E6? One row, one column named vendor."
+                .to_string(),
+        },
+        AgentTask {
+            name: "mac_registry_block",
+            prompt: "MAC address a4:58:0f:d0:00:01 falls inside an IEEE assignment. Which IEEE \
+                     registry block size (MA-L, MA-M or MA-S) is the most specific assignment \
+                     covering it, and who holds it? One row: a `block` column then an \
+                     `organization` column."
+                .to_string(),
+        },
+        AgentTask {
+            name: "normalize_cisco_mac",
+            prompt: "A switch printed the MAC address 001B.6384.45E6 in Cisco dotted notation. \
+                     Rewrite it in canonical lowercase colon-separated form. One row, one column \
+                     named mac."
+                .to_string(),
+        },
+        AgentTask {
+            name: "classify_mac_bits",
+            prompt: "For each of these MAC addresses — 00:1b:63:84:45:e6, 01:00:5e:00:00:fb, \
+                     da:a1:19:12:34:56, ff:ff:ff:ff:ff:ff — report whether it is a multicast \
+                     (group) address, whether it is locally administered (e.g. randomized), and \
+                     whether it is the broadcast address. Return columns mac, multicast, local, \
+                     broadcast (booleans), ordered by mac."
+                .to_string(),
+        },
+        AgentTask {
+            name: "slaac_interface_id",
+            prompt: "IPv6 stateless autoconfiguration derives a modified EUI-64 interface \
+                     identifier from a MAC address. What is it for MAC 34-56-78-9A-BC-DE? Return \
+                     it as text in IPv6 hextet form (four groups of four hex digits separated \
+                     by colons). One row, one column named iid."
+                .to_string(),
+        },
+        AgentTask {
+            name: "vendor_of_slaac_host",
+            prompt: "A host uses the SLAAC link-local IPv6 address fe80::21b:63ff:fe84:45e6. \
+                     Recover the MAC address embedded in it and tell me its IEEE-registered \
+                     vendor. One row: a `mac` column (lowercase colon form) then a `vendor` \
+                     column."
+                .to_string(),
+        },
+        AgentTask {
+            name: "randomized_mac_bytes",
+            prompt: format!(
+                "This IPFIX datagram (hex) carries Layer-2 flows with source and destination \
+                 MAC addresses: {SAMPLE_IPFIX_MAC_HEX}. Decode it and total the bytes of the \
+                 flows whose source MAC address is locally administered (randomized). One row, \
+                 one integer column named randomized_bytes."
             ),
         },
         AgentTask {

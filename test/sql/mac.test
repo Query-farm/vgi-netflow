@@ -1,0 +1,125 @@
+# name: test/sql/mac.test
+# description: MAC enrichment scalars — oui_vendor / oui_lookup (bundled IEEE
+#              MA-L/MA-M/MA-S snapshot), mac_normalize, mac_is_* flags,
+#              eui48_to_eui64, mac_from_ipv6 — over VARCHAR, BLOB, integer, and
+#              decoded IPFIX raw_fields MACs.
+# group: [vgi_netflow]
+
+require-env VGI_NETFLOW_WORKER
+
+statement ok
+LOAD vgi;
+
+statement ok
+ATTACH 'netflow' AS netflow (TYPE vgi, LOCATION '${VGI_NETFLOW_WORKER}');
+
+# Vendor lookup in every input notation.
+query T
+SELECT netflow.main.oui_vendor(m) FROM (VALUES ('00:1b:63:84:45:e6'), ('00-1B-63-84-45-E6'),
+    ('001b.6384.45e6'), ('001B638445E6'), ('0:1b:63:84:45:e6')) AS t(m);
+----
+Apple, Inc.
+Apple, Inc.
+Apple, Inc.
+Apple, Inc.
+Apple, Inc.
+
+query TTT
+SELECT netflow.main.oui_vendor('00:0c:29:aa:bb:cc'), netflow.main.oui_vendor('b8:27:eb:01:02:03'),
+    netflow.main.oui_vendor('fc:fb:fb:01:02:03');
+----
+VMware, Inc.	Raspberry Pi Foundation	Cisco Systems, Inc
+
+# 6-byte BLOB and integer forms.
+query TTT
+SELECT netflow.main.oui_vendor(from_hex('001b638445e6')), netflow.main.oui_vendor(117633730022::UBIGINT),
+    netflow.main.mac_normalize(117633730022);
+----
+Apple, Inc.	Apple, Inc.	00:1b:63:84:45:e6
+
+# Unknown / randomized / invalid / NULL → NULL, never an error.
+query TTTTT
+SELECT netflow.main.oui_vendor('da:a1:19:12:34:56'), netflow.main.oui_vendor('not a mac'),
+    netflow.main.oui_vendor(from_hex('0102')), netflow.main.oui_vendor(NULL::VARCHAR),
+    netflow.main.oui_vendor(-1);
+----
+NULL	NULL	NULL	NULL	NULL
+
+# Non-MAC argument types are rejected at bind time.
+statement error
+SELECT netflow.main.oui_vendor(true);
+----
+expected a MAC as VARCHAR, BLOB, or integer
+
+# oui_lookup: longest prefix wins (MA-S > MA-M > MA-L).
+query TTT
+SELECT a.prefix, a.block, a.organization
+FROM (SELECT unnest([netflow.main.oui_lookup('00:1b:63:84:45:e6'),
+                     netflow.main.oui_lookup('a4:58:0f:d0:00:01'),
+                     netflow.main.oui_lookup('8c:1f:64:af:a1:23')]) AS a);
+----
+00:1b:63:00:00:00/24	MA-L	Apple, Inc.
+a4:58:0f:d0:00:00/28	MA-M	EYE IO, LLC
+8c:1f:64:af:a0:00/36	MA-S	DATA ELECTRONIC DEVICES, INC
+
+query T
+SELECT netflow.main.oui_lookup('da:a1:19:12:34:56') IS NULL;
+----
+true
+
+# mac_normalize.
+query TTTT
+SELECT netflow.main.mac_normalize('001B.6384.45E6'), netflow.main.mac_normalize(' AA-BB-CC-DD-EE-FF '),
+    netflow.main.mac_normalize('00:1b:63:84:45'), netflow.main.mac_normalize('00:1b:63-84:45:e6');
+----
+00:1b:63:84:45:e6	aa:bb:cc:dd:ee:ff	NULL	NULL
+
+# Address-bit flags.
+query TTTT
+SELECT m, netflow.main.mac_is_multicast(m), netflow.main.mac_is_local(m), netflow.main.mac_is_broadcast(m)
+FROM (VALUES ('00:1b:63:84:45:e6'), ('01:00:5e:00:00:fb'), ('da:a1:19:12:34:56'),
+             ('ff:ff:ff:ff:ff:ff'), ('bogus')) AS t(m) ORDER BY m;
+----
+00:1b:63:84:45:e6	false	false	false
+01:00:5e:00:00:fb	true	false	false
+bogus	NULL	NULL	NULL
+da:a1:19:12:34:56	false	true	false
+ff:ff:ff:ff:ff:ff	true	true	true
+
+# Modified EUI-64 (RFC 4291 Appendix A) and back.
+query TTT
+SELECT netflow.main.eui48_to_eui64('34-56-78-9A-BC-DE'), netflow.main.eui48_to_eui64('00:1b:63:84:45:e6'),
+    netflow.main.eui48_to_eui64('nope');
+----
+3656:78ff:fe9a:bcde	021b:63ff:fe84:45e6	NULL
+
+query TTTT
+SELECT netflow.main.mac_from_ipv6('fe80::21b:63ff:fe84:45e6'),
+    netflow.main.mac_from_ipv6('2001:db8::3656:78ff:fe9a:bcde/64'),
+    netflow.main.mac_from_ipv6('2001:db8::1'), netflow.main.mac_from_ipv6('10.0.0.1');
+----
+00:1b:63:84:45:e6	34:56:78:9a:bc:de	NULL	NULL
+
+query T
+SELECT netflow.main.oui_vendor(netflow.main.mac_from_ipv6('fe80::' || netflow.main.eui48_to_eui64('00:1b:63:84:45:e6')));
+----
+Apple, Inc.
+
+# Decoded IPFIX L2 flows: MACs arrive as 6-byte BLOBs in raw_fields.
+query TTTI
+SELECT netflow.main.mac_normalize(f.raw_fields['sourceMacAddress']) AS src_mac,
+       netflow.main.oui_vendor(f.raw_fields['sourceMacAddress']) AS vendor,
+       netflow.main.mac_is_local(f.raw_fields['sourceMacAddress']) AS randomized,
+       f.bytes
+FROM netflow.main.flows((SELECT content AS datagram FROM read_blob('test/data/ipfix_mac.dat'))) AS f
+ORDER BY src_mac;
+----
+00:1b:63:84:45:e6	Apple, Inc.	false	1000
+b8:27:eb:0a:0b:0c	Raspberry Pi Foundation	false	3000
+da:a1:19:12:34:56	NULL	true	2000
+
+query I
+SELECT count(*) FROM netflow.main.flows((SELECT content AS datagram FROM read_blob('test/data/ipfix_mac.dat'))) AS f
+WHERE netflow.main.mac_is_broadcast(f.raw_fields['destinationMacAddress']);
+----
+1

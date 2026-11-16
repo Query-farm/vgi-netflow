@@ -1,0 +1,7 @@
+# IEEE Registration Authority MAC address block snapshot (regenerate: ci/gen-oui.py)
+retrieved=2026-11-16
+source=https://standards-oui.ieee.org/
+MA-L https://standards-oui.ieee.org/oui/oui.csv rows=40497 sha256=b7f3fed411869c2b6768f17e58ea34401adde68c1b8482e9be221c68d36acf56
+MA-M https://standards-oui.ieee.org/oui28/mam.csv rows=6688 sha256=6e853da4476b1eaea64691a1bd368f853c71e320ce084c34653e43a24316a31e
+MA-S https://standards-oui.ieee.org/oui36/oui36.csv rows=7281 sha256=492d8abca7ad0b3638f495fb160ab7a169744a5048fce39928937384488dc15c
+organizations=30903 names_bytes=728166

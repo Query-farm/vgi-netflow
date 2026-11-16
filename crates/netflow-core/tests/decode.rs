@@ -209,6 +209,29 @@ fn ipfix_variable_length_and_enterprise_ies() {
 }
 
 #[test]
+fn ipfix_mac_fields_land_in_raw_fields() {
+    let mut c = TemplateCache::new();
+    let rows = decode(&fixtures::ipfix_mac(), &mut c, "r1");
+    assert_eq!(rows.len(), fixtures::IPFIX_MAC_PAIRS.len());
+    for (row, (src, dst)) in rows.iter().zip(fixtures::IPFIX_MAC_PAIRS) {
+        assert!(row.diagnostics.is_none(), "{:?}", row.diagnostics);
+        let get = |k: &str| {
+            row.raw_fields
+                .iter()
+                .find(|(n, _)| n == k)
+                .map(|(_, v)| v.clone())
+        };
+        assert_eq!(get("sourceMacAddress").as_deref(), Some(src.as_ref()));
+        assert_eq!(get("destinationMacAddress").as_deref(), Some(dst.as_ref()));
+    }
+    let src = netflow_core::mac::mac_from_bytes(&rows[0].raw_fields[0].1);
+    assert_eq!(
+        src.and_then(|m| netflow_core::oui::vendor(&m)),
+        Some("Apple, Inc.")
+    );
+}
+
+#[test]
 fn ipfix_options_record_carries_sampling() {
     let mut c = TemplateCache::new();
     let rows = decode(&fixtures::ipfix_options(), &mut c, "r1");

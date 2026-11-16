@@ -19,6 +19,12 @@ arrives *before* its template is buffered and retried, or emitted with
 `diagnostics = 'missing-template:…'` — never dropped. Network/security
 observability compute, in-engine, no collector stack.
 
+It also enriches the **Layer-2** side: MAC-address scalars resolve a MAC's
+IEEE-registered vendor from a bundled registry snapshot, normalize its notation,
+flag multicast / randomized (locally administered) / broadcast addresses, and
+convert to and from IPv6 modified EUI-64 — directly on the MACs IPFIX exports in
+`raw_fields['sourceMacAddress']`.
+
 > **Not a pcap worker.** A NetFlow/IPFIX datagram is an *aggregate report an
 > exporter sends about many packets*, not the packets themselves. Carve UDP
 > payloads with a pcap reader upstream; vgi-netflow starts at the UDP payload.
@@ -147,11 +153,52 @@ never collide across devices.
 | `flow_version(blob)` | scalar | `'5'` / `'9'` / `'10'` / `'sflow5'` / `NULL` |
 | `header(blob)` | scalar | `STRUCT(version, count, sys_uptime, export_time, sequence, obs_domain)` |
 | `well_formed(blob)` | scalar | `STRUCT(ok, version, error, kind)` — never panics on garbage |
+| `oui_vendor(mac)` | scalar | IEEE-registered organization (`VARCHAR`), longest prefix of MA-S / MA-M / MA-L; `NULL` if unassigned |
+| `oui_lookup(mac)` | scalar | `STRUCT(prefix, block, organization)` — e.g. `00:1b:63:00:00:00/24`, `MA-L`, `Apple, Inc.` |
+| `mac_normalize(mac)` | scalar | Canonical `aa:bb:cc:dd:ee:ff`; `NULL` if not a MAC |
+| `mac_is_multicast(mac)` | scalar | I/G bit set (multicast or broadcast) |
+| `mac_is_local(mac)` | scalar | U/L bit set — locally administered, e.g. a randomized privacy MAC |
+| `mac_is_broadcast(mac)` | scalar | `ff:ff:ff:ff:ff:ff` |
+| `eui48_to_eui64(mac)` | scalar | Modified EUI-64 interface ID (RFC 4291 App. A) as hextets, e.g. `021b:63ff:fe84:45e6` |
+| `mac_from_ipv6(address)` | scalar | MAC embedded in a SLAAC (modified EUI-64) IPv6 address (`VARCHAR`); `NULL` otherwise |
 
 Input relation columns (read by name, case-insensitive): **`datagram`** (BLOB,
 required; also accepts `content` / `blob`, or the first binary column),
 **`exporter`** (VARCHAR, optional, per row), **`obs_domain`** (integer, optional),
 **`mode`** (VARCHAR, `flows` only: `auto` / `flows-only` / `all`).
+
+`mac` accepts `VARCHAR` in colon, dash, Cisco dotted (`aabb.ccdd.eeff`) or bare
+hex notation (any case, 1–2 digits per group), a 6-byte `BLOB` (how IPFIX carries
+`sourceMacAddress` / `destinationMacAddress` in `raw_fields`), or an integer
+holding the 48-bit address. Anything that is not a MAC yields `NULL`, never an
+error.
+
+### MAC enrichment
+
+```sql
+-- Attribute decoded L2 flows to hardware vendors and flag randomized MACs.
+SELECT netflow.main.mac_normalize(f.raw_fields['sourceMacAddress']) AS src_mac,
+       netflow.main.oui_vendor(f.raw_fields['sourceMacAddress'])    AS vendor,
+       netflow.main.mac_is_local(f.raw_fields['sourceMacAddress'])  AS randomized,
+       sum(f.bytes)                                                 AS bytes
+FROM netflow.main.flows((SELECT content AS datagram, filename AS exporter
+                         FROM read_blob('captures/*.ipfix'))) AS f
+WHERE f.raw_fields['sourceMacAddress'] IS NOT NULL
+GROUP BY ALL ORDER BY bytes DESC;
+
+-- SLAAC: link-local address for a MAC, and back to the vendor.
+SELECT 'fe80::' || netflow.main.eui48_to_eui64('00:1b:63:84:45:e6') AS link_local,   -- fe80::021b:63ff:fe84:45e6
+       netflow.main.oui_vendor(netflow.main.mac_from_ipv6('fe80::21b:63ff:fe84:45e6')) AS vendor;  -- Apple, Inc.
+```
+
+Vendor data is a snapshot of the **IEEE Registration Authority** registries —
+MA-L (`oui/oui.csv`), MA-M (`oui28/mam.csv`) and MA-S (`oui36/oui36.csv`) from
+<https://standards-oui.ieee.org/>, retrieved **2026-11-16** — keeping only each
+assignment prefix and organization name (~54k assignments, ~1.1 MB compiled in;
+no network at runtime). Provenance (row counts, CSV checksums) is in
+`crates/netflow-core/data/oui/SNAPSHOT`; regenerate with `python3 ci/gen-oui.py`.
+Randomized MACs (U/L bit set) almost never match a registry entry, so
+`oui_vendor` is `NULL` for them — pair it with `mac_is_local`.
 
 ### Normalized output schema (`flows()` and the per-version decoders)
 
@@ -196,7 +243,9 @@ drives arbitrary/truncated bytes through every decoder asserting **zero panics**
 MIT. NetFlow v9 (RFC 3954), IPFIX (RFC 7011/7012), and sFlow v5 (sflow.org) are
 open specs; the bundled IANA IPFIX Information-Element registry is a public
 protocol registry (curated snapshot in `crates/netflow-core/src/registry/`,
-attributed to IANA / RFC 7012). No GPL/AGPL/copyleft, no commercial data license.
+attributed to IANA / RFC 7012). The MAC vendor table is derived directly from the
+IEEE Registration Authority's public MA-L / MA-M / MA-S registries (not from
+Wireshark's GPL `manuf` file). No GPL/AGPL/copyleft, no commercial data license.
 
 ## Non-goals (v1)
 

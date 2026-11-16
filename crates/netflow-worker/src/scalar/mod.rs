@@ -1,7 +1,10 @@
-//! Scalar functions: `flow_version`, `header`, `well_formed`.
+//! Scalar functions: `flow_version`, `header`, `well_formed`, plus the MAC
+//! enrichment scalars in [`mac`] (`oui_vendor`, `oui_lookup`, `mac_normalize`,
+//! `mac_is_*`, `eui48_to_eui64`, `mac_from_ipv6`).
 
 mod flow_version;
 mod header;
+mod mac;
 mod well_formed;
 
 use arrow_array::cast::AsArray;
@@ -15,6 +18,7 @@ pub fn register(worker: &mut Worker) {
     worker.register_scalar(flow_version::FlowVersion);
     worker.register_scalar(header::Header);
     worker.register_scalar(well_formed::WellFormed);
+    mac::register(worker);
 }
 
 /// Borrow the bytes of a BLOB (`Binary` / `LargeBinary`) cell, or `None` if null.

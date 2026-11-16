@@ -230,6 +230,8 @@ pub const IPFIX_TEMPLATE_ID: u16 = 256;
 pub const IPFIX_VAR_TEMPLATE_ID: u16 = 257;
 /// IPFIX options template id.
 pub const IPFIX_OPTIONS_TEMPLATE_ID: u16 = 258;
+/// IPFIX MAC-address (L2) template id.
+pub const IPFIX_MAC_TEMPLATE_ID: u16 = 259;
 /// IPFIX observation domain.
 pub const IPFIX_OBS_DOMAIN: u32 = 42;
 
@@ -292,6 +294,53 @@ pub fn ipfix_variable_enterprise() -> Vec<u8> {
     ipfix_header(
         &mut w,
         &[(2u16, tmpl.done()), (IPFIX_VAR_TEMPLATE_ID, data.done())],
+    );
+    w.done()
+}
+
+/// The `(source, destination)` MAC pairs carried by [`ipfix_mac`], one per data
+/// record: an Apple NIC, a randomized (locally administered) phone MAC, and a
+/// Raspberry Pi talking to broadcast.
+pub const IPFIX_MAC_PAIRS: [([u8; 6], [u8; 6]); 3] = [
+    (
+        [0x00, 0x1b, 0x63, 0x84, 0x45, 0xe6],
+        [0xfc, 0xfb, 0xfb, 0x01, 0x02, 0x03],
+    ),
+    (
+        [0xda, 0xa1, 0x19, 0x12, 0x34, 0x56],
+        [0xfc, 0xfb, 0xfb, 0x01, 0x02, 0x03],
+    ),
+    (
+        [0xb8, 0x27, 0xeb, 0x0a, 0x0b, 0x0c],
+        [0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
+    ),
+];
+
+/// IPFIX datagram with Layer-2 fields: a template carrying src/dst IPv4,
+/// `sourceMacAddress` (IE 56), `destinationMacAddress` (IE 80), and
+/// `octetDeltaCount`, plus one data record per [`IPFIX_MAC_PAIRS`] entry. The
+/// MACs land in `raw_fields` as 6-byte BLOBs (the MAC enrichment scalars' input).
+pub fn ipfix_mac() -> Vec<u8> {
+    let mut tmpl = W::default();
+    tmpl.u16(IPFIX_MAC_TEMPLATE_ID).u16(5);
+    for (id, len) in [(8u16, 4u16), (12, 4), (56, 6), (80, 6), (1, 8)] {
+        tmpl.u16(id).u16(len);
+    }
+
+    let mut data = W::default();
+    for (i, (src, dst)) in IPFIX_MAC_PAIRS.iter().enumerate() {
+        let host = 10 + i as u8;
+        data.ipv4(192, 168, 1, host)
+            .ipv4(192, 168, 1, 1)
+            .bytes(src)
+            .bytes(dst)
+            .u64(1_000 * (i as u64 + 1));
+    }
+
+    let mut w = W::default();
+    ipfix_header(
+        &mut w,
+        &[(2u16, tmpl.done()), (IPFIX_MAC_TEMPLATE_ID, data.done())],
     );
     w.done()
 }
