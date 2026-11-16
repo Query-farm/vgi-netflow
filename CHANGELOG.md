@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1 (2026-11-16)
+
+- Bump the vgi Rust SDK to 0.51.1.
+- CI: a release reuses the passing CI run of its commit; container images build on release tags only.
+
 ## 0.5.0 — 2026-11-16
 
 ### Added
