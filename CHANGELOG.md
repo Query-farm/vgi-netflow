@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 — 2026-11-16
 
 ### Added
 - MAC-address enrichment scalars (category `enrichment`): `oui_vendor(mac)`,
